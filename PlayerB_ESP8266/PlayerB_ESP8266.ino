@@ -18,6 +18,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <espnow.h>
+#include <user_interface.h>
 #include <Wire.h>
 
 #include "game.h"
@@ -59,6 +60,8 @@ static bool      splashNeedsRedraw = false;
 static uint32_t  hbTimer          = 0;
 static uint32_t  helloTimer       = 0;
 static uint32_t  gameOverEnteredMs = 0;
+static uint32_t  gameOverBroadcastMs = 0;
+static uint32_t  lastOppHeartbeatMs = 0;
 static uint32_t  frameCount       = 0;
 
 // ─────────────────────────────────────────────────────────
@@ -155,17 +158,22 @@ void onDataRecv(uint8_t* mac, uint8_t* data, uint8_t len) {
       break;
 
     case PKT_HEARTBEAT:
+      // If we already know they died, ignore late-arriving heartbeats
+      if (!gs.opp_alive && (appState == STATE_GAMEOVER_WAIT || appState == STATE_GAMEOVER)) {
+        break;
+      }
       gs.opp_distance = pkt->distance;
       gs.opp_player_y = pkt->player_y;
       gs.opp_alive    = (pkt->alive != 0);
       gs.opp_seen     = true;
+      lastOppHeartbeatMs = millis();
       break;
 
     case PKT_GAMEOVER:
       gs.opp_distance = pkt->distance;
       gs.opp_alive    = false;
       gs.opp_seen     = true;
-      // Main loop will notice opp_alive == false and calculate the winner
+      lastOppHeartbeatMs = millis(); // GAMEOVER counts as a heartbeat so we don't time out
       break;
 
     default: break;
@@ -182,6 +190,7 @@ void setup() {
   Serial.println("[PlayerB] Booting...");
 
   WiFi.mode(WIFI_STA);
+  wifi_set_channel(1);
   WiFi.disconnect();
   Serial.print("[PlayerB] MAC: ");
   Serial.println(WiFi.macAddress());
@@ -292,17 +301,16 @@ void loop() {
       }
 
       if (gameOver) {
-        if (!soloMode) sendGameOver();
+        if (!soloMode) {
+          sendGameOver();
+        }
         iWon              = false;
         isTie             = false;
         gameOverDrawn     = false;
         gameOverEnteredMs = now;
+        gameOverBroadcastMs = now;
         
-        if (soloMode) {
-          appState = STATE_GAMEOVER;
-        } else {
-          appState = STATE_GAMEOVER_WAIT;
-        }
+        appState = soloMode ? STATE_GAMEOVER : STATE_GAMEOVER_WAIT;
         
         Serial.print("[PlayerB] Game over! Score=");
         Serial.println((int)gs.distance);
@@ -317,8 +325,15 @@ void loop() {
         gameOverDrawn = true;
       }
       
-      // Wait for opponent's PKT_GAMEOVER, or timeout after 2 seconds
-      if (!gs.opp_alive || (now - gameOverEnteredMs >= 2000)) {
+      // Continuously broadcast our GAMEOVER packet every 100ms
+      if (now - gameOverBroadcastMs >= 100) {
+        sendGameOver();
+        gameOverBroadcastMs = now;
+      }
+
+      // Wait indefinitely until opponent sends PKT_GAMEOVER (opp_alive = false)
+      // Only time out if we stop receiving heartbeats for 2 full seconds (e.g. board unplugged)
+      if (!gs.opp_alive || (now - lastOppHeartbeatMs >= 2000)) {
         // Calculate result
         if (abs(gs.distance - gs.opp_distance) < 2.0f) {
           isTie = true;
@@ -339,6 +354,12 @@ void loop() {
 
     // ── GAME OVER ───────────────────────────────────────
     case STATE_GAMEOVER:
+      if (!soloMode && now - gameOverBroadcastMs >= 200) {
+        sendGameOver();
+        gameOverBroadcastMs = now;
+      }
+
+      // Draw the game-over screen exactly ONCE
       if (!gameOverDrawn) {
         disp.drawGameOver(gs, iWon, isTie, soloMode);
         gameOverDrawn = true;

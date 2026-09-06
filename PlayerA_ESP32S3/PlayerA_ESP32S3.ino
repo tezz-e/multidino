@@ -16,6 +16,7 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_idf_version.h>
+#include <esp_wifi.h>
 #include <Wire.h>
 
 #include "game.h"
@@ -49,7 +50,9 @@ static bool       soloMode     = false;
 static uint32_t   helloTimer   = 0;
 static uint32_t   hbTimer      = 0;
 static uint32_t   countdownStart = 0;
-static uint32_t   gameOverEnteredMs = 0;  // timestamp when we entered GAMEOVER
+static uint32_t   gameOverEnteredMs = 0;
+static uint32_t   gameOverBroadcastMs = 0;
+static uint32_t   lastOppHeartbeatMs = 0;
 static int        countdownN   = 3;
 static bool       iWon         = false;
 static bool       isTie        = false;
@@ -117,17 +120,22 @@ void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int len) {
     }
 
     case PKT_HEARTBEAT:
+      // If we already know they died, ignore late-arriving heartbeats
+      if (!gs.opp_alive && (appState == STATE_GAMEOVER_WAIT || appState == STATE_GAMEOVER)) {
+        break;
+      }
       gs.opp_distance = pkt->distance;
       gs.opp_player_y = pkt->player_y;
       gs.opp_alive    = (pkt->alive != 0);
       gs.opp_seen     = true;
+      lastOppHeartbeatMs = millis();
       break;
 
     case PKT_GAMEOVER:
       gs.opp_distance = pkt->distance;
       gs.opp_alive    = false;
       gs.opp_seen     = true;
-      // Main loop will notice opp_alive == false and calculate the winner
+      lastOppHeartbeatMs = millis(); // GAMEOVER counts as a heartbeat so we don't time out
       break;
 
     default:
@@ -219,6 +227,7 @@ void setup() {
   Serial.println("[PlayerA] Booting...");
 
   WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
   WiFi.disconnect();
   Serial.print("[PlayerA] MAC: ");
   Serial.println(WiFi.macAddress());
@@ -259,14 +268,13 @@ void setup() {
 // ─────────────────────────────────────────────────────────
 void loop() {
   uint32_t now = millis();
-
+  
   // Frame rate limiter — don't run faster than ~30fps
   if (now - lastFrameMs < FRAME_INTERVAL_MS) return;
   float dt = (now - lastFrameMs) / 1000.0f;
   if (dt > 0.1f) dt = 0.1f;  // safety cap
   lastFrameMs = now;
 
-  // Always read touch every frame to keep edge-detection perfectly in sync
   bool tap = touch.readJump(now);
 
   switch (appState) {
@@ -329,17 +337,17 @@ void loop() {
       }
 
       if (collision) {
-        if (!soloMode) sendGameOver();
+        if (!soloMode) {
+          sendGameOver();
+        }
+        
         iWon              = false;
         isTie             = false;
         gameOverDrawn     = false;
-        gameOverEnteredMs = now;  // record when we died
+        gameOverEnteredMs = now;
+        gameOverBroadcastMs = now;
         
-        if (soloMode) {
-          appState = STATE_GAMEOVER;
-        } else {
-          appState = STATE_GAMEOVER_WAIT;
-        }
+        appState = soloMode ? STATE_GAMEOVER : STATE_GAMEOVER_WAIT;
         
         Serial.print("[PlayerA] Game over! Score=");
         Serial.println((int)gs.distance);
@@ -354,8 +362,15 @@ void loop() {
         gameOverDrawn = true;
       }
       
-      // Wait for opponent's PKT_GAMEOVER, or timeout after 2 seconds
-      if (!gs.opp_alive || (now - gameOverEnteredMs >= 2000)) {
+      // Continuously broadcast our GAMEOVER packet every 100ms
+      if (now - gameOverBroadcastMs >= 100) {
+        sendGameOver();
+        gameOverBroadcastMs = now;
+      }
+      
+      // Wait indefinitely until opponent sends PKT_GAMEOVER (opp_alive = false)
+      // Only time out if we stop receiving heartbeats for 2 full seconds (e.g. board unplugged)
+      if (!gs.opp_alive || (now - lastOppHeartbeatMs >= 2000)) {
         // Calculate result
         if (abs(gs.distance - gs.opp_distance) < 2.0f) {
           isTie = true;
@@ -376,6 +391,11 @@ void loop() {
 
     // ── GAME OVER ───────────────────────────────────────
     case STATE_GAMEOVER:
+      if (!soloMode && now - gameOverBroadcastMs >= 200) {
+        sendGameOver();
+        gameOverBroadcastMs = now;
+      }
+
       // Draw the game-over screen exactly ONCE
       if (!gameOverDrawn) {
         disp.drawGameOver(gs, iWon, isTie, soloMode);
