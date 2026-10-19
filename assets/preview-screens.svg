@@ -1,69 +1,85 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" width="100%" height="100%">
   <defs>
-    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0F172A"/>
-      <stop offset="100%" stop-color="#090D16"/>
+    <linearGradient id="rackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#161922"/>
+      <stop offset="100%" stop-color="#0E1015"/>
     </linearGradient>
-    <filter id="pixelGlow" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="1" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <linearGradient id="slotGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E232F"/>
+      <stop offset="100%" stop-color="#12161E"/>
+    </linearGradient>
   </defs>
 
-  <rect width="920" height="480" rx="16" fill="#060911"/>
+  <!-- Rack Chassis Base -->
+  <rect width="920" height="480" rx="12" fill="url(#rackGrad)" stroke="#262C3A" stroke-width="1.5"/>
+  <line x1="20" y1="1" x2="900" y2="1" stroke="#FFFFFF" stroke-opacity="0.1" stroke-width="1"/>
 
-  <!-- Top Header -->
-  <text x="460" y="32" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="12" font-weight="600" letter-spacing="2" text-anchor="middle">
-    OLED FINITE STATE MACHINE (128×64 MONOCHROME)
-  </text>
+  <!-- Top Rack Header -->
+  <g transform="translate(40, 24)" font-family="ui-monospace, monospace">
+    <text x="0" y="10" fill="#EDEDED" font-size="12" font-weight="700" letter-spacing="1">
+      FINITE STATE MACHINE // 128×64 MONOCHROME OLED
+    </text>
+    <text x="840" y="10" fill="#64748B" font-size="10" text-anchor="end">30.0 FPS FIXED TIMESTEP</text>
+  </g>
 
-  <!-- SCREEN 1: SPLASH / PAIRED -->
-  <g transform="translate(40, 50)">
-    <rect width="390" height="180" rx="10" fill="url(#cardGrad)" stroke="#1E293B" stroke-width="1.5"/>
-    <text x="16" y="24" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="700">01 // STATE_SPLASH (PAIRED)</text>
+  <!-- PANEL 1: SPLASH & PAIRING -->
+  <g transform="translate(40, 48)">
+    <rect width="396" height="188" rx="8" fill="url(#slotGrad)" stroke="#2A3140" stroke-width="1"/>
     
-    <!-- Screen Glass -->
-    <rect x="40" y="35" width="307" height="153" rx="4" fill="#000000" stroke="#334155" stroke-width="1"/>
-    <g filter="url(#pixelGlow)">
-      <text x="75" y="72" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="24" font-weight="800">DINO</text>
-      <text x="75" y="102" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="24" font-weight="800">DUEL</text>
-      <text x="50" y="155" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="14" font-weight="600">Paired! Tap=Start</text>
+    <g transform="translate(14, 16)" font-family="ui-monospace, monospace">
+      <circle cx="4" cy="5" r="3" fill="#FF6B00"/>
+      <text x="14" y="8" fill="#CBD5E1" font-size="10" font-weight="700" letter-spacing="0.5">
+        01 // STATE_SPLASH (PAIRED)
+      </text>
+    </g>
+
+    <!-- Glass Display -->
+    <rect x="44" y="30" width="307" height="153" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+      <text x="75" y="70" font-size="24" font-weight="800">DINO</text>
+      <text x="75" y="98" font-size="24" font-weight="800">DUEL</text>
+      <text x="50" y="150" font-size="13" font-weight="600">Paired! Tap=Start</text>
     </g>
   </g>
 
-  <!-- SCREEN 2: COUNTDOWN -->
-  <g transform="translate(490, 50)">
-    <rect width="390" height="180" rx="10" fill="url(#cardGrad)" stroke="#1E293B" stroke-width="1.5"/>
-    <text x="16" y="24" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="700">02 // STATE_COUNTDOWN</text>
+  <!-- PANEL 2: COUNTDOWN SYNCHRONIZER -->
+  <g transform="translate(484, 48)">
+    <rect width="396" height="188" rx="8" fill="url(#slotGrad)" stroke="#2A3140" stroke-width="1"/>
     
-    <rect x="40" y="35" width="307" height="153" rx="4" fill="#000000" stroke="#334155" stroke-width="1"/>
-    <g filter="url(#pixelGlow)">
-      <!-- Large GO! or Number -->
-      <text x="193" y="125" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="52" font-weight="900" text-anchor="middle">GO!</text>
-      <text x="193" y="165" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="12" font-weight="600" text-anchor="middle">3 → 2 → 1 → GO</text>
+    <g transform="translate(14, 16)" font-family="ui-monospace, monospace">
+      <circle cx="4" cy="5" r="3" fill="#10B981"/>
+      <text x="14" y="8" fill="#CBD5E1" font-size="10" font-weight="700" letter-spacing="0.5">
+        02 // STATE_COUNTDOWN
+      </text>
+    </g>
+
+    <rect x="44" y="30" width="307" height="153" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+      <text x="197" y="120" font-size="52" font-weight="900" text-anchor="middle">GO!</text>
+      <text x="197" y="160" fill="#71717A" font-size="11" font-weight="600" text-anchor="middle">3 → 2 → 1 → GO</text>
     </g>
   </g>
 
-  <!-- SCREEN 3: PLAYING -->
-  <g transform="translate(40, 255)">
-    <rect width="390" height="180" rx="10" fill="url(#cardGrad)" stroke="#1E293B" stroke-width="1.5"/>
-    <text x="16" y="24" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="700">03 // STATE_PLAYING (DUEL IN PROGRESS)</text>
+  <!-- PANEL 3: ACTIVE PLAYING -->
+  <g transform="translate(40, 256)">
+    <rect width="396" height="188" rx="8" fill="url(#slotGrad)" stroke="#2A3140" stroke-width="1"/>
     
-    <rect x="40" y="35" width="307" height="153" rx="4" fill="#000000" stroke="#334155" stroke-width="1"/>
-    <!-- Embedded live action -->
-    <g filter="url(#pixelGlow)">
-      <text x="48" y="55" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="12" font-weight="700">OPP: 340</text>
-      <text x="340" y="55" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="12" font-weight="700" text-anchor="end">412</text>
-      <line x1="40" y1="164" x2="347" y2="164" stroke="#FFFFFF" stroke-width="2"/>
+    <g transform="translate(14, 16)" font-family="ui-monospace, monospace">
+      <circle cx="4" cy="5" r="3" fill="#FF6B00"/>
+      <text x="14" y="8" fill="#CBD5E1" font-size="10" font-weight="700" letter-spacing="0.5">
+        03 // STATE_PLAYING (DUEL WITH GHOST)
+      </text>
+    </g>
+
+    <rect x="44" y="30" width="307" height="153" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
+    <g>
+      <text x="52" y="50" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700">OPP: 340</text>
+      <text x="344" y="50" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="end">412</text>
+      <line x1="44" y1="159" x2="351" y2="159" stroke="#FFFFFF" stroke-width="2"/>
       
-      <!-- Ground texture -->
-      <circle cx="100" cy="170" r="1" fill="#FFFFFF"/>
-      <circle cx="160" cy="174" r="1" fill="#FFFFFF"/>
-      <circle cx="230" cy="170" r="1" fill="#FFFFFF"/>
-      <circle cx="290" cy="174" r="1" fill="#FFFFFF"/>
+      <circle cx="100" cy="165" r="1" fill="#71717A"/>
+      <circle cx="160" cy="169" r="1" fill="#71717A"/>
+      <circle cx="230" cy="165" r="1" fill="#71717A"/>
 
       <rect x="80.2" y="104.0" width="2.4" height="2.4" fill="#FFFFFF"/>
 <rect x="82.6" y="104.0" width="2.4" height="2.4" fill="#FFFFFF"/>
@@ -615,22 +631,28 @@
     </g>
   </g>
 
-  <!-- SCREEN 4: GAME OVER -->
-  <g transform="translate(490, 255)">
-    <rect width="390" height="180" rx="10" fill="url(#cardGrad)" stroke="#1E293B" stroke-width="1.5"/>
-    <text x="16" y="24" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="700">04 // STATE_GAMEOVER (VERDICT)</text>
+  <!-- PANEL 4: GAME OVER VERDICT -->
+  <g transform="translate(484, 256)">
+    <rect width="396" height="188" rx="8" fill="url(#slotGrad)" stroke="#2A3140" stroke-width="1"/>
     
-    <rect x="40" y="35" width="307" height="153" rx="4" fill="#000000" stroke="#334155" stroke-width="1"/>
-    <g filter="url(#pixelGlow)">
-      <text x="60" y="68" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="22" font-weight="900">YOU WIN!</text>
-      <text x="60" y="105" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="15" font-weight="600">You: 842</text>
-      <text x="60" y="128" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="15" font-weight="600">Opp: 615</text>
-      <text x="60" y="162" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="13" font-weight="500">- Tap to Replay -</text>
+    <g transform="translate(14, 16)" font-family="ui-monospace, monospace">
+      <circle cx="4" cy="5" r="3" fill="#10B981"/>
+      <text x="14" y="8" fill="#CBD5E1" font-size="10" font-weight="700" letter-spacing="0.5">
+        04 // STATE_GAMEOVER (VERDICT)
+      </text>
+    </g>
+
+    <rect x="44" y="30" width="307" height="153" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+      <text x="64" y="64" font-size="20" font-weight="900">YOU WIN!</text>
+      <text x="64" y="100" font-size="14" font-weight="600">You: 842</text>
+      <text x="64" y="122" font-size="14" font-weight="600">Opp: 615</text>
+      <text x="64" y="156" font-size="12" font-weight="500" fill="#94A3B8">- Tap to Replay -</text>
     </g>
   </g>
 
-  <!-- Bottom status note -->
-  <text x="460" y="465" fill="#64748B" font-family="ui-monospace, monospace" font-size="11" text-anchor="middle">
-    All rendering executed at 30 FPS via Adafruit GFX (SH1106G on Player A, SSD1306 on Player B)
+  <!-- Rack Footer -->
+  <text x="460" y="468" fill="#525A6B" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">
+    All states executed locally on each board with 18-byte packed ESP-NOW heartbeat synchronization
   </text>
 </svg>

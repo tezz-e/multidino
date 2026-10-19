@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Microcontrollers-ESP32--S3%20%7C%20ESP8266-00E5FF?style=flat-square" alt="Hardware">
-  <img src="https://img.shields.io/badge/Protocol-ESP--NOW%20(Peer--to--Peer)-10B981?style=flat-square" alt="Protocol">
-  <img src="https://img.shields.io/badge/Displays-SH1106%201.3%22%20%7C%20SSD1306%200.96%22-38BDF8?style=flat-square" alt="Displays">
-  <img src="https://img.shields.io/badge/Physics-30%20FPS%20Fixed%20Loop-8B5CF6?style=flat-square" alt="Framerate">
-  <img src="https://img.shields.io/badge/License-MIT-gray?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/Hardware-ESP32--S3%20%2B%20ESP8266-181A20?style=flat-square" alt="Hardware">
+  <img src="https://img.shields.io/badge/Protocol-ESP--NOW%20(2.4%20GHz)-FF6B00?style=flat-square" alt="Protocol">
+  <img src="https://img.shields.io/badge/Displays-1--Bit%20Monochrome%20OLED-27272A?style=flat-square" alt="Displays">
+  <img src="https://img.shields.io/badge/Loop-30.0%20FPS%20Fixed-10B981?style=flat-square" alt="Framerate">
+  <img src="https://img.shields.io/badge/License-MIT-52525B?style=flat-square" alt="License">
 </p>
 
 <p align="center">

@@ -1,14 +1,15 @@
 """
-generate_assets.py
-Generates pixel-accurate, high-fidelity SVG graphics for the MultiDino repository:
-- assets/logo.svg
-- assets/banner.svg
-- assets/preview-gameplay.svg
-- assets/preview-screens.svg
-- assets/architecture.svg
+generate_assets.py — Industrial Hardware Aesthetics for MultiDino
+Implements the design principles from ui-references (Teenage Engineering, Nothing Tech, Industrial Hardware):
+- Deep matte chassis, machined aluminum bezels, 1px hairline edges.
+- Zero neon glow or generic cyan gradient soup.
+- Functional Signal Amber (#FF6B00) and Phosphor Green (#10B981) hardware accents.
+- True 1-bit monochrome OLED rendering with authentic scanline-masked ghost sprite.
+- Physical hardware details: machine screws, silk-screen labels, I2C pin headers, test points.
 """
 
 import os
+import math
 
 # Exact PROGMEM sprite bytes from sprites.h
 TREX_RUN1 = [
@@ -81,261 +82,442 @@ TREX_2_GRID = decode_bitmap(TREX_RUN2, 25, 26)
 CACTUS_A_GRID = decode_bitmap(CACTUS_A, 11, 23)
 CACTUS_C_GRID = decode_bitmap(CACTUS_C, 22, 23)
 
-def render_grid_svg(grid, origin_x, origin_y, scale=1, fill="#FFFFFF", ghost_scanlines=False):
-    """Generates combined SVG rects for a grid of pixels."""
+def render_grid_svg(grid, origin_x, origin_y, scale=1.0, fill="#FFFFFF", ghost_scanlines=False):
     rects = []
     h = len(grid)
     w = len(grid[0])
     for y in range(h):
         if ghost_scanlines and (y % 2 == 0):
-            # Scanline mask for ghost dino as implemented on OLED
             continue
         for x in range(w):
             if grid[y][x]:
                 rects.append(f'<rect x="{origin_x + x*scale:.1f}" y="{origin_y + y*scale:.1f}" width="{scale:.1f}" height="{scale:.1f}" fill="{fill}"/>')
     return "\n".join(rects)
 
+def svg_screw(x, y, r=4.5, angle=35):
+    rad = math.radians(angle)
+    dx = math.cos(rad) * (r * 0.65)
+    dy = math.sin(rad) * (r * 0.65)
+    return (
+        f'<circle cx="{x}" cy="{y}" r="{r}" fill="#14171E" stroke="#323744" stroke-width="1"/>'
+        f'<line x1="{x-dx:.1f}" y1="{y-dy:.1f}" x2="{x+dx:.1f}" y2="{y+dy:.1f}" stroke="#5A6173" stroke-width="1.2" stroke-linecap="round"/>'
+    )
+
+def svg_via(x, y):
+    return (
+        f'<circle cx="{x}" cy="{y}" r="2" fill="#232733" stroke="#3A4050" stroke-width="0.75"/>'
+        f'<circle cx="{x}" cy="{y}" r="0.8" fill="#0A0B0E"/>'
+    )
+
 def build_logo_svg():
-    scale = 6
-    dino_svg = render_grid_svg(TREX_1_GRID, 125, 105, scale=scale, fill="#00E5FF")
+    # Industrial hardware badge / instrument faceplate (400x400)
+    scale = 5.0
+    dino_svg = render_grid_svg(TREX_1_GRID, 137, 135, scale=scale, fill="#FFFFFF")
+    cactus_svg = render_grid_svg(CACTUS_A_GRID, 280, 150, scale=scale, fill="#A1A1AA")
+
+    screws = [
+        svg_screw(32, 32, 5, 40),
+        svg_screw(368, 32, 5, 125),
+        svg_screw(32, 368, 5, 75),
+        svg_screw(368, 368, 5, 15)
+    ]
+
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a0f1d"/>
-      <stop offset="100%" stop-color="#050811"/>
+    <linearGradient id="chassisGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#181B22"/>
+      <stop offset="100%" stop-color="#0F1116"/>
     </linearGradient>
-    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.8"/>
-      <stop offset="50%" stop-color="#3B82F6" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#10B981" stop-opacity="0.2"/>
+    <linearGradient id="bezelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#282D39"/>
+      <stop offset="100%" stop-color="#14171E"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <pattern id="dotGrid" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1" fill="#1e293b" fill-opacity="0.6"/>
+    <pattern id="hardwareGrid" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M 16 0 L 0 0 0 16" fill="none" stroke="#222631" stroke-width="0.6"/>
     </pattern>
   </defs>
 
-  <!-- Background Card -->
-  <rect x="12" y="12" width="376" height="376" rx="48" fill="url(#bgGrad)"/>
-  <rect x="12" y="12" width="376" height="376" rx="48" fill="url(#dotGrid)"/>
-  <rect x="12" y="12" width="376" height="376" rx="48" fill="none" stroke="url(#borderGrad)" stroke-width="2"/>
+  <!-- Physical Chassis Base -->
+  <rect x="10" y="10" width="380" height="380" rx="14" fill="url(#chassisGrad)" stroke="#2C3240" stroke-width="1.5"/>
+  <rect x="10" y="10" width="380" height="380" rx="14" fill="url(#hardwareGrid)" opacity="0.6"/>
 
-  <!-- ESP-NOW Radar Waves -->
-  <circle cx="200" cy="180" r="140" fill="none" stroke="#00E5FF" stroke-opacity="0.08" stroke-width="2" stroke-dasharray="6 8"/>
-  <circle cx="200" cy="180" r="105" fill="none" stroke="#00E5FF" stroke-opacity="0.15" stroke-width="1.5" stroke-dasharray="4 6"/>
-  <circle cx="200" cy="180" r="70" fill="none" stroke="#00E5FF" stroke-opacity="0.25" stroke-width="1"/>
+  <!-- Top Hairline Highlight (1px machined bevel sheen) -->
+  <line x1="24" y1="11" x2="376" y2="11" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="1"/>
 
-  <!-- Dino Ground line -->
-  <line x1="80" y1="265" x2="320" y2="265" stroke="#00E5FF" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
-  <line x1="80" y1="265" x2="320" y2="265" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Mounting Fasteners -->
+  {''.join(screws)}
 
-  <!-- Pixel T-Rex Sprite -->
-  <g filter="url(#glow)">
-    {dino_svg}
+  <!-- Header Silkscreen / Status Strip -->
+  <g transform="translate(48, 32)" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+    <rect x="0" y="0" width="76" height="18" rx="3" fill="#1C212B" stroke="#2F3646" stroke-width="1"/>
+    <text x="38" y="13" fill="#94A3B8" font-size="9.5" font-weight="700" letter-spacing="1" text-anchor="middle">MD-01</text>
+
+    <!-- Signal Amber LED -->
+    <circle cx="270" cy="9" r="3.5" fill="#FF6B00"/>
+    <circle cx="270" cy="9" r="6" fill="none" stroke="#FF6B00" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="260" y="12.5" fill="#CBD5E1" font-size="9" font-weight="600" text-anchor="end" letter-spacing="0.5">ESP-NOW</text>
   </g>
 
-  <!-- Dual Signal Badges -->
-  <rect x="75" y="305" width="115" height="24" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1"/>
-  <text x="132" y="321" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="11" font-weight="600" text-anchor="middle">ESP32-S3</text>
+  <!-- Milled OLED Bezel Frame -->
+  <rect x="44" y="66" width="312" height="216" rx="8" fill="url(#bezelGrad)" stroke="#323847" stroke-width="1.5"/>
+  
+  <!-- Vacuum OLED Display Face (True 1-bit Black) -->
+  <rect x="52" y="74" width="296" height="200" rx="4" fill="#020305"/>
 
-  <rect x="210" y="305" width="115" height="24" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1"/>
-  <text x="267" y="321" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="11" font-weight="600" text-anchor="middle">ESP8266</text>
+  <!-- Subtle Display Matrix Grid -->
+  <rect x="52" y="74" width="296" height="200" fill="none" stroke="#0E121A" stroke-width="1"/>
 
-  <!-- Title Bottom -->
-  <text x="200" y="365" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="800" letter-spacing="4" text-anchor="middle">MULTIDINO</text>
+  <!-- OLED 1-Bit Screen Content -->
+  <g>
+    <!-- Screen HUD -->
+    <text x="68" y="98" fill="#A1A1AA" font-family="ui-monospace, monospace" font-size="12" font-weight="700" letter-spacing="1">CH:01</text>
+    <text x="332" y="98" fill="#EDEDED" font-family="ui-monospace, monospace" font-size="13" font-weight="700" text-anchor="end" letter-spacing="1">0042</text>
+
+    <!-- Ground Baseline (SCREEN_GROUND_Y) -->
+    <line x1="52" y1="264" x2="348" y2="264" stroke="#FFFFFF" stroke-width="2"/>
+    
+    <!-- Ground texture pixels -->
+    <rect x="75" y="268" width="4" height="2" fill="#71717A"/>
+    <rect x="130" y="270" width="6" height="2" fill="#71717A"/>
+    <rect x="220" y="268" width="4" height="2" fill="#71717A"/>
+    <rect x="290" y="270" width="8" height="2" fill="#71717A"/>
+
+    <!-- 1-Bit Monochrome Dino Sprite -->
+    {dino_svg}
+
+    <!-- Approaching Cactus -->
+    {cactus_svg}
+  </g>
+
+  <!-- Bottom Instrument Plate -->
+  <g transform="translate(48, 304)">
+    <text x="0" y="24" fill="#EDEDED" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="800" letter-spacing="3.5">MULTIDINO</text>
+    <text x="0" y="44" fill="#71717A" font-family="ui-monospace, 'SF Mono', monospace" font-size="10.5" font-weight="600" letter-spacing="1">
+      2-PLAYER DETERMINISTIC RUNNER
+    </text>
+
+    <!-- Test point pads -->
+    <g transform="translate(260, 10)">
+      {svg_via(0, 10)}
+      <text x="6" y="13" fill="#525A6B" font-family="ui-monospace, monospace" font-size="8">TP1</text>
+      {svg_via(24, 10)}
+      <text x="30" y="13" fill="#525A6B" font-family="ui-monospace, monospace" font-size="8">TP2</text>
+    </g>
+
+    <!-- Subtitle Spec -->
+    <rect x="0" y="56" width="304" height="1" fill="#242936"/>
+    <text x="0" y="70" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="9" letter-spacing="0.5">
+      ESP32-S3 • ESP8266 • ZERO-ROUTER RF
+    </text>
+  </g>
 </svg>
 """
     return svg
 
 def build_banner_svg():
-    # Ground at y=218.
-    # Dino height = 26 * 3.5 = 91.
-    # Player A (jumping): y = 218 - 91 - 25 = 102.
-    # Player B ghost (grounded): y = 218 - 91 = 127.
-    # Cactus C (double, h=23*3.5=80.5): y = 218 - 80.5 = 137.5.
-    # Cactus A (single, h=23*3.5=80.5): y = 218 - 80.5 = 137.5.
-    dino_a = render_grid_svg(TREX_1_GRID, 610, 102, scale=3.5, fill="#00E5FF")
-    dino_b = render_grid_svg(TREX_2_GRID, 535, 127, scale=3.5, fill="#FFFFFF", ghost_scanlines=True)
-    cactus1 = render_grid_svg(CACTUS_C_GRID, 730, 137.5, scale=3.5, fill="#38BDF8")
-    cactus2 = render_grid_svg(CACTUS_A_GRID, 840, 137.5, scale=3.5, fill="#38BDF8")
+    # Industrial hardware test-bench console (960x320)
+    # Replaces neon gradient slop with precision-machined dark aluminum chassis,
+    # authentic physical telemetry, and two distinct hardware modules.
+    
+    # Left Display (Player A Host on ESP32-S3):
+    dino_a = render_grid_svg(TREX_1_GRID, 100, 130, scale=3.0, fill="#FFFFFF")
+    cactus_a = render_grid_svg(CACTUS_C_GRID, 210, 140, scale=3.0, fill="#A1A1AA")
+
+    # Right Display (Player B Client on ESP8266):
+    # Showing ghost dino on the exact same obstacle sequence
+    dino_ghost = render_grid_svg(TREX_2_GRID, 700, 140, scale=3.0, fill="#FFFFFF", ghost_scanlines=True)
+    dino_b = render_grid_svg(TREX_1_GRID, 730, 130, scale=3.0, fill="#FFFFFF")
+    cactus_b = render_grid_svg(CACTUS_C_GRID, 810, 140, scale=3.0, fill="#A1A1AA")
+
+    screws = [
+        svg_screw(20, 20, 4.5, 45),
+        svg_screw(940, 20, 4.5, 110),
+        svg_screw(20, 300, 4.5, 80),
+        svg_screw(940, 300, 4.5, 20),
+        svg_screw(340, 20, 4, 15),
+        svg_screw(620, 20, 4, 160)
+    ]
 
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="100%" height="100%">
   <defs>
-    <linearGradient id="bannerBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#080D1A"/>
-      <stop offset="60%" stop-color="#050811"/>
-      <stop offset="100%" stop-color="#0A1128"/>
+    <linearGradient id="benchGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#14171E"/>
+      <stop offset="100%" stop-color="#0B0D11"/>
     </linearGradient>
-    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#00E5FF"/>
-      <stop offset="50%" stop-color="#3B82F6"/>
-      <stop offset="100%" stop-color="#10B981"/>
+    <linearGradient id="moduleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1B1F2A"/>
+      <stop offset="100%" stop-color="#10131A"/>
     </linearGradient>
-    <filter id="bannerGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="5" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
-      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1E293B" stroke-width="0.75" stroke-opacity="0.4"/>
+    <pattern id="benchGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1D222E" stroke-width="0.7"/>
     </pattern>
   </defs>
 
-  <!-- Background -->
-  <rect width="960" height="320" rx="16" fill="url(#bannerBg)"/>
-  <rect width="960" height="320" rx="16" fill="url(#gridPattern)"/>
+  <!-- Main Chassis Plate -->
+  <rect x="6" y="6" width="948" height="308" rx="10" fill="url(#benchGrad)" stroke="#262C3A" stroke-width="1.5"/>
+  <rect x="6" y="6" width="948" height="308" rx="10" fill="url(#benchGrid)" opacity="0.6"/>
 
-  <!-- Top Accent Bar -->
-  <rect x="0" y="0" width="960" height="4" fill="url(#accentLine)"/>
+  <!-- Top Hairline Bevel Highlight -->
+  <line x1="18" y1="7" x2="942" y2="7" stroke="#FFFFFF" stroke-opacity="0.1" stroke-width="1"/>
 
-  <!-- Left Column: Typography & Badges -->
-  <g transform="translate(50, 46)">
-    <!-- Pill Category Badge -->
-    <rect x="0" y="0" width="280" height="26" rx="13" fill="#0f172a" stroke="#00E5FF" stroke-width="1" stroke-opacity="0.4"/>
-    <circle cx="12" cy="13" r="4" fill="#00E5FF"/>
-    <text x="24" y="17" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="600" letter-spacing="1.5">ESP-NOW WIRELESS PROTOCOL</text>
+  <!-- Corner & Divider Screws -->
+  {''.join(screws)}
 
-    <!-- Main Title -->
-    <text x="0" y="74" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" letter-spacing="-1">MultiDino</text>
-    <text x="235" y="74" fill="#00E5FF" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" letter-spacing="-1">.</text>
+  <!-- Master Top Telemetry Header -->
+  <g transform="translate(36, 18)" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" font-weight="600">
+    <rect x="0" y="0" width="180" height="22" rx="3" fill="#181D26" stroke="#2B3242" stroke-width="1"/>
+    <text x="12" y="15" fill="#E2E8F0" font-weight="700" letter-spacing="1">MULTIDINO // LAB RIG</text>
 
-    <!-- Subtitle -->
-    <text x="0" y="106" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="14.5" font-weight="400">
-      Two-Player Seeded Deterministic Runner across ESP32-S3 and ESP8266
-    </text>
+    <!-- Center Status Bar -->
+    <rect x="290" y="0" width="300" height="22" rx="3" fill="#12161E" stroke="#242B38" stroke-width="1"/>
+    <circle cx="304" cy="11" r="3.5" fill="#FF6B00"/>
+    <text x="316" y="15" fill="#94A3B8" letter-spacing="0.5">ESP-NOW CH 01 • 2412 MHz • DUAL MCU</text>
 
-    <!-- Architecture Tags -->
-    <g transform="translate(0, 136)">
-      <rect x="0" y="0" width="138" height="28" rx="6" fill="#1E293B" fill-opacity="0.7" stroke="#334155" stroke-width="1"/>
-      <text x="69" y="18" fill="#E2E8F0" font-family="ui-monospace, monospace" font-size="11" font-weight="600" text-anchor="middle">ESP32-S3 • HOST</text>
+    <!-- Right Clocks -->
+    <rect x="710" y="0" width="178" height="22" rx="3" fill="#181D26" stroke="#2B3242" stroke-width="1"/>
+    <circle cx="724" cy="11" r="3.5" fill="#10B981"/>
+    <text x="736" y="15" fill="#CBD5E1">SYNC: 30.0 FPS LOCKED</text>
+  </g>
 
-      <rect x="146" y="0" width="144" height="28" rx="6" fill="#1E293B" fill-opacity="0.7" stroke="#334155" stroke-width="1"/>
-      <text x="218" y="18" fill="#E2E8F0" font-family="ui-monospace, monospace" font-size="11" font-weight="600" text-anchor="middle">ESP8266 • CLIENT</text>
+  <!-- LEFT MODULE: PLAYER A (ESP32-S3 HOST) -->
+  <g transform="translate(36, 52)">
+    <!-- Sub-Chassis Housing -->
+    <rect width="280" height="240" rx="8" fill="url(#moduleGrad)" stroke="#2C3342" stroke-width="1.2"/>
+    
+    <!-- Module Identification Header -->
+    <g transform="translate(14, 14)" font-family="ui-monospace, monospace">
+      <text x="0" y="11" fill="#FFFFFF" font-size="12" font-weight="700" letter-spacing="1">PLAYER A // HOST</text>
+      <text x="0" y="24" fill="#64748B" font-size="9.5">ESP32-S3 DevKitC • 1.3" SH1106</text>
+      <circle cx="240" cy="8" r="3" fill="#10B981"/>
+    </g>
 
-      <rect x="298" y="0" width="120" height="28" rx="6" fill="#1E293B" fill-opacity="0.7" stroke="#334155" stroke-width="1"/>
-      <text x="358" y="18" fill="#00E5FF" font-family="ui-monospace, monospace" font-size="11" font-weight="600" text-anchor="middle">32-BIT SEED LCG</text>
+    <!-- OLED Bezel Frame -->
+    <rect x="14" y="46" width="252" height="135" rx="5" fill="#0A0D13" stroke="#242A38" stroke-width="1"/>
+    <!-- OLED Glass -->
+    <rect x="18" y="50" width="244" height="127" rx="3" fill="#020305"/>
 
-      <rect x="0" y="36" width="160" height="28" rx="6" fill="#1E293B" fill-opacity="0.7" stroke="#334155" stroke-width="1"/>
-      <text x="80" y="54" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="11" font-weight="600" text-anchor="middle">ZERO-ROUTER RF LINK</text>
+    <!-- OLED Screen Content -->
+    <g>
+      <text x="28" y="68" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10" font-weight="700">OPP: 294</text>
+      <text x="250" y="68" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="end">312</text>
+      <line x1="18" y1="168" x2="262" y2="168" stroke="#FFFFFF" stroke-width="1.5"/>
+      <circle cx="45" cy="172" r="1" fill="#71717A"/>
+      <circle cx="120" cy="172" r="1" fill="#71717A"/>
+      <circle cx="190" cy="172" r="1" fill="#71717A"/>
+      {dino_a}
+      {cactus_a}
+    </g>
 
-      <rect x="168" y="36" width="150" height="28" rx="6" fill="#1E293B" fill-opacity="0.7" stroke="#334155" stroke-width="1"/>
-      <text x="243" y="54" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="11" font-weight="600" text-anchor="middle">GHOST SPRITE SYNC</text>
+    <!-- Hardware Pin Header Strip -->
+    <g transform="translate(14, 192)" font-family="ui-monospace, monospace" font-size="8.5" fill="#94A3B8">
+      <rect width="252" height="34" rx="4" fill="#131720" stroke="#222834" stroke-width="1"/>
+      <text x="12" y="14" fill="#525A6B">I2C BUS:</text>
+      <text x="65" y="14" fill="#CBD5E1">SDA:IO8</text>
+      <text x="125" y="14" fill="#CBD5E1">SCL:IO9</text>
+      
+      <text x="12" y="27" fill="#525A6B">INPUT:</text>
+      <text x="65" y="27" fill="#FF6B00">TTP223 TOUCH [IO10]</text>
+      
+      <!-- Copper test pads -->
+      {svg_via(235, 17)}
     </g>
   </g>
 
-  <!-- Right Visual Stage: The Retro OLED Scene Mockup -->
-  <!-- Screen boundary mockup -->
-  <rect x="495" y="45" width="420" height="235" rx="12" fill="#030712" stroke="#1E293B" stroke-width="2"/>
-  <rect x="505" y="55" width="400" height="215" rx="6" fill="#000000"/>
+  <!-- CENTER TRANSMISSION BRIDGE (PROTOCOL TELEMETRY) -->
+  <g transform="translate(332, 52)">
+    <rect width="296" height="240" rx="8" fill="#10131A" stroke="#222834" stroke-width="1.2"/>
+    
+    <!-- Title -->
+    <g transform="translate(16, 16)" font-family="ui-monospace, monospace">
+      <text x="0" y="10" fill="#94A3B8" font-size="10" font-weight="700" letter-spacing="1">RF SYNC // ZERO STREAMING</text>
+      <text x="0" y="24" fill="#525A6B" font-size="9">Deterministic Lockstep Architecture</text>
+    </g>
 
-  <!-- Screen HUD -->
-  <text x="525" y="78" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="12" font-weight="700">OPP: 294</text>
-  <text x="885" y="78" fill="#00E5FF" font-family="ui-monospace, monospace" font-size="12" font-weight="700" text-anchor="end">312</text>
+    <!-- Schematic Bus Routing Box -->
+    <g transform="translate(14, 52)">
+      <!-- Packet Spec Card -->
+      <rect width="268" height="68" rx="5" fill="#161B24" stroke="#283040" stroke-width="1"/>
+      <text x="12" y="18" fill="#CBD5E1" font-family="ui-monospace, monospace" font-size="9.5" font-weight="700">
+        STRUCT DuelPacket (18 Bytes)
+      </text>
+      <text x="12" y="34" fill="#71717A" font-family="ui-monospace, monospace" font-size="8.5">
+        uint8_t type  •  uint32_t seed
+      </text>
+      <text x="12" y="48" fill="#71717A" font-family="ui-monospace, monospace" font-size="8.5">
+        float distance • float player_y • uint8_t alive
+      </text>
+      <rect x="12" y="55" width="244" height="2" fill="#242B38"/>
+      <rect x="12" y="55" width="20" height="2" fill="#FF6B00"/>
+    </g>
 
-  <!-- Ground Line -->
-  <line x1="505" y1="218" x2="905" y2="218" stroke="#00E5FF" stroke-width="2"/>
-  <!-- Ground texture pixels -->
-  <circle cx="530" cy="225" r="1.5" fill="#00E5FF"/>
-  <circle cx="580" cy="228" r="1.5" fill="#00E5FF"/>
-  <circle cx="640" cy="225" r="1.5" fill="#00E5FF"/>
-  <circle cx="710" cy="228" r="1.5" fill="#00E5FF"/>
-  <circle cx="790" cy="225" r="1.5" fill="#00E5FF"/>
-  <circle cx="860" cy="228" r="1.5" fill="#00E5FF"/>
+    <!-- Seed Sync Step Visual -->
+    <g transform="translate(14, 130)" font-family="ui-monospace, monospace">
+      <rect width="268" height="48" rx="4" fill="#141822" stroke="#222836" stroke-width="1"/>
+      
+      <circle cx="16" cy="18" r="3.5" fill="#FF6B00"/>
+      <text x="26" y="21" fill="#EDEDED" font-size="9" font-weight="700">PKT_SEED (Host ──&gt; Client)</text>
+      <text x="26" y="35" fill="#64748B" font-size="8.5">Both seed LCG(seed) at countdown</text>
 
-  <!-- Sprites inside scene -->
-  <g id="stage-sprites">
-    {dino_b}
-    {dino_a}
-    {cactus1}
-    {cactus2}
+      <!-- Bidirectional Heartbeat Arrow -->
+      <line x1="20" y1="42" x2="248" y2="42" stroke="#384154" stroke-width="1" stroke-dasharray="3 3"/>
+    </g>
+
+    <!-- Footer Summary Callout -->
+    <g transform="translate(14, 188)" font-family="ui-monospace, monospace">
+      <rect width="268" height="38" rx="4" fill="#161A24" stroke="#252C3B" stroke-width="1"/>
+      <text x="10" y="16" fill="#10B981" font-size="8.5" font-weight="700">✓ INDEPENDENT PHYSICS LOOPS</text>
+      <text x="10" y="29" fill="#94A3B8" font-size="8">Zero RF jitter affects player jumps or AABB</text>
+    </g>
   </g>
 
-  <!-- Legend labels under stage -->
-  <circle cx="535" cy="254" r="4" fill="#FFFFFF"/>
-  <text x="545" y="258" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10">Opponent Ghost</text>
+  <!-- RIGHT MODULE: PLAYER B (ESP8266 CLIENT) -->
+  <g transform="translate(644, 52)">
+    <rect width="280" height="240" rx="8" fill="url(#moduleGrad)" stroke="#2C3342" stroke-width="1.2"/>
+    
+    <!-- Module Identification Header -->
+    <g transform="translate(14, 14)" font-family="ui-monospace, monospace">
+      <text x="0" y="11" fill="#FFFFFF" font-size="12" font-weight="700" letter-spacing="1">PLAYER B // CLIENT</text>
+      <text x="0" y="24" fill="#64748B" font-size="9.5">ESP8266 NodeMCU • 0.96" SSD1306</text>
+      <circle cx="240" cy="8" r="3" fill="#10B981"/>
+    </g>
 
-  <circle cx="665" cy="254" r="4" fill="#00E5FF"/>
-  <text x="675" y="258" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="10">Player A (Local)</text>
+    <!-- OLED Bezel Frame -->
+    <rect x="14" y="46" width="252" height="135" rx="5" fill="#0A0D13" stroke="#242A38" stroke-width="1"/>
+    <!-- OLED Glass -->
+    <rect x="18" y="50" width="244" height="127" rx="3" fill="#020305"/>
+
+    <!-- OLED Screen Content with GHOST DINO -->
+    <g>
+      <text x="28" y="68" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10" font-weight="700">OPP: 312</text>
+      <text x="250" y="68" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="end">294</text>
+      <line x1="18" y1="168" x2="262" y2="168" stroke="#FFFFFF" stroke-width="1.5"/>
+      <circle cx="50" cy="172" r="1" fill="#71717A"/>
+      <circle cx="140" cy="172" r="1" fill="#71717A"/>
+      <circle cx="210" cy="172" r="1" fill="#71717A"/>
+      
+      <!-- Ghost dino + local dino -->
+      {dino_ghost}
+      {dino_b}
+      {cactus_b}
+    </g>
+
+    <!-- Hardware Pin Header Strip -->
+    <g transform="translate(14, 192)" font-family="ui-monospace, monospace" font-size="8.5" fill="#94A3B8">
+      <rect width="252" height="34" rx="4" fill="#131720" stroke="#222834" stroke-width="1"/>
+      <text x="12" y="14" fill="#525A6B">I2C BUS:</text>
+      <text x="65" y="14" fill="#CBD5E1">SDA:D6</text>
+      <text x="125" y="14" fill="#CBD5E1">SCL:D7</text>
+      
+      <text x="12" y="27" fill="#525A6B">INPUT:</text>
+      <text x="65" y="27" fill="#FF6B00">TTP223 TOUCH [D5/GPIO14]</text>
+      
+      {svg_via(235, 17)}
+    </g>
+  </g>
 </svg>
 """
     return svg
 
 def build_gameplay_preview_svg():
-    scale = 4
+    # Authentic physical OLED breakout module (1.3" SH1106 / 0.96" SSD1306)
+    # FR4 Black Solder Mask, gold ENIG plated contacts, realistic glass shine,
+    # true 1-bit monochrome graphics with zero artificial neon blur.
+    
+    scale = 4.0
     screen_x = 64
-    screen_y = 52
-    ground_y = screen_y + 54 * scale # 54 * 4 = 216 -> 268
+    screen_y = 58
+    ground_y = screen_y + int(54 * scale) # 58 + 216 = 274
 
-    # Local Dino (Jumping over cactus, offset 16px above ground):
-    # Dino on ground top = ground_y - 26*4 = 268 - 104 = 164.
-    # Airborne by 16px -> y = 164 - 16*4 = 100.
-    dino_local = render_grid_svg(TREX_1_GRID, screen_x + 8*scale, 100, scale=scale, fill="#FFFFFF")
-    # Ghost Dino (Grounded): y = 164
-    dino_ghost = render_grid_svg(TREX_2_GRID, screen_x + 4*scale, 164, scale=scale, fill="#FFFFFF", ghost_scanlines=True)
-    # Double cactus at ox=75. Height = 23*4 = 92. y = ground_y - 92 = 268 - 92 = 176.
-    cactus_obs = render_grid_svg(CACTUS_C_GRID, screen_x + 75*scale, 176, scale=scale, fill="#FFFFFF")
+    dino_local = render_grid_svg(TREX_1_GRID, screen_x + int(8*scale), 108, scale=scale, fill="#FFFFFF")
+    dino_ghost = render_grid_svg(TREX_2_GRID, screen_x + int(4*scale), 170, scale=scale, fill="#FFFFFF", ghost_scanlines=True)
+    cactus_obs = render_grid_svg(CACTUS_C_GRID, screen_x + int(75*scale), 182, scale=scale, fill="#FFFFFF")
+
+    screws = [
+        svg_screw(36, 32, 5.5, 45),
+        svg_screw(604, 32, 5.5, 130),
+        svg_screw(36, 348, 5.5, 85),
+        svg_screw(604, 348, 5.5, 20)
+    ]
 
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 380" width="100%" height="100%">
   <defs>
-    <linearGradient id="pcbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#141E30"/>
-      <stop offset="100%" stop-color="#0F172A"/>
+    <linearGradient id="pcbBase" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#151821"/>
+      <stop offset="100%" stop-color="#0D0F14"/>
     </linearGradient>
-    <filter id="oledGlow" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <linearGradient id="glassSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.04"/>
+      <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.01"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.2"/>
+    </linearGradient>
   </defs>
 
-  <!-- Module PCB -->
-  <rect x="20" y="16" width="600" height="348" rx="14" fill="url(#pcbGrad)" stroke="#334155" stroke-width="2"/>
+  <!-- FR4 PCB Substrate -->
+  <rect x="18" y="14" width="604" height="352" rx="12" fill="url(#pcbBase)" stroke="#2B3240" stroke-width="1.5"/>
 
-  <!-- Mounting Holes -->
-  <circle cx="36" cy="32" r="6" fill="#0B0F17" stroke="#475569" stroke-width="2"/>
-  <circle cx="604" cy="32" r="6" fill="#0B0F17" stroke="#475569" stroke-width="2"/>
-  <circle cx="36" cy="348" r="6" fill="#0B0F17" stroke="#475569" stroke-width="2"/>
-  <circle cx="604" cy="348" r="6" fill="#0B0F17" stroke="#475569" stroke-width="2"/>
+  <!-- Top Machined Bevel Highlight -->
+  <line x1="30" y1="15" x2="610" y2="15" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="1"/>
 
-  <!-- Pin Header Labels at Top -->
-  <g transform="translate(240, 26)" font-family="ui-monospace, monospace" font-size="9" fill="#94A3B8" font-weight="700">
-    <text x="0" y="0">GND</text>
-    <text x="45" y="0">VCC</text>
-    <text x="90" y="0">SCL</text>
-    <text x="135" y="0">SDA</text>
+  <!-- ENIG Gold Plated Mounting Holes -->
+  <circle cx="36" cy="32" r="10" fill="none" stroke="#D4AF37" stroke-width="1.2" stroke-opacity="0.5"/>
+  <circle cx="604" cy="32" r="10" fill="none" stroke="#D4AF37" stroke-width="1.2" stroke-opacity="0.5"/>
+  <circle cx="36" cy="348" r="10" fill="none" stroke="#D4AF37" stroke-width="1.2" stroke-opacity="0.5"/>
+  <circle cx="604" cy="348" r="10" fill="none" stroke="#D4AF37" stroke-width="1.2" stroke-opacity="0.5"/>
+  {''.join(screws)}
+
+  <!-- Top 4-Pin Solder Header (GND, VCC, SCL, SDA) -->
+  <g transform="translate(230, 24)" font-family="ui-monospace, monospace" font-size="9" font-weight="700" fill="#94A3B8">
+    <!-- Pin 1: GND -->
+    <rect x="0" y="0" width="34" height="18" rx="2" fill="#1B1F2A" stroke="#363E50" stroke-width="1"/>
+    <circle cx="8" cy="9" r="3.5" fill="#D4AF37"/>
+    <text x="16" y="12" fill="#CBD5E1">GND</text>
+
+    <!-- Pin 2: VCC -->
+    <rect x="42" y="0" width="34" height="18" rx="2" fill="#1B1F2A" stroke="#363E50" stroke-width="1"/>
+    <circle cx="50" cy="9" r="3.5" fill="#D4AF37"/>
+    <text x="58" y="12" fill="#CBD5E1">VCC</text>
+
+    <!-- Pin 3: SCL -->
+    <rect x="84" y="0" width="34" height="18" rx="2" fill="#1B1F2A" stroke="#363E50" stroke-width="1"/>
+    <circle cx="92" cy="9" r="3.5" fill="#D4AF37"/>
+    <text x="100" y="12" fill="#CBD5E1">SCL</text>
+
+    <!-- Pin 4: SDA -->
+    <rect x="126" y="0" width="34" height="18" rx="2" fill="#1B1F2A" stroke="#363E50" stroke-width="1"/>
+    <circle cx="134" cy="9" r="3.5" fill="#D4AF37"/>
+    <text x="142" y="12" fill="#CBD5E1">SDA</text>
   </g>
 
-  <!-- OLED Glass Frame (128x64 scaled by 4 = 512x256) -->
-  <rect x="{screen_x - 6}" y="{screen_y - 6}" width="524" height="268" rx="8" fill="#020408" stroke="#1E293B" stroke-width="2"/>
-  <rect x="{screen_x}" y="{screen_y}" width="512" height="256" fill="#000000"/>
+  <!-- Silkscreen Module Identification -->
+  <g transform="translate(64, 342)" font-family="ui-monospace, monospace" font-size="9" fill="#525A6B">
+    <text x="0" y="0">SH1106G / SSD1306 128×64 OLED</text>
+    <text x="400" y="0" text-anchor="end">I2C: 0x3C • 800 kHz</text>
+  </g>
 
-  <!-- Live OLED Frame Contents -->
-  <g filter="url(#oledGlow)">
-    <!-- HUD: Opponent indicator & Score -->
-    <text x="{screen_x + 8}" y="{screen_y + 24}" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="20" font-weight="700">OPP: 340</text>
-    <text x="{screen_x + 512 - 8}" y="{screen_y + 24}" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="20" font-weight="700" text-anchor="end">412</text>
+  <!-- OLED Display Glass Frame -->
+  <rect x="{screen_x - 6}" y="{screen_y - 6}" width="524" height="268" rx="6" fill="#10131A" stroke="#2D3444" stroke-width="1.5"/>
+  
+  <!-- Active 128x64 OLED Matrix Area (Pure Black Vacuum Screen) -->
+  <rect x="{screen_x}" y="{screen_y}" width="512" height="256" fill="#000000"/>
+  <rect x="{screen_x}" y="{screen_y}" width="512" height="256" fill="url(#glassSheen)"/>
+
+  <!-- True 1-Bit Pixel Monochrome Content -->
+  <g>
+    <!-- HUD -->
+    <text x="{screen_x + 12}" y="{screen_y + 24}" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="18" font-weight="700" letter-spacing="1">OPP: 340</text>
+    <text x="{screen_x + 512 - 12}" y="{screen_y + 24}" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="18" font-weight="700" text-anchor="end" letter-spacing="1">412</text>
 
     <!-- Ground Line (SCREEN_GROUND_Y = 54) -->
     <line x1="{screen_x}" y1="{ground_y}" x2="{screen_x + 512}" y2="{ground_y}" stroke="#FFFFFF" stroke-width="4"/>
 
-    <!-- Ground Texture scrolling dots -->
+    <!-- Ground texture dots -->
     <rect x="{screen_x + 60}" y="{ground_y + 8}" width="4" height="4" fill="#FFFFFF"/>
     <rect x="{screen_x + 120}" y="{ground_y + 16}" width="4" height="4" fill="#FFFFFF"/>
     <rect x="{screen_x + 220}" y="{ground_y + 8}" width="4" height="4" fill="#FFFFFF"/>
     <rect x="{screen_x + 340}" y="{ground_y + 16}" width="4" height="4" fill="#FFFFFF"/>
     <rect x="{screen_x + 450}" y="{ground_y + 8}" width="4" height="4" fill="#FFFFFF"/>
 
-    <!-- Ghost Dino (Opponent on ground) -->
+    <!-- Scanline Ghost Dino (Opponent on ground) -->
     {dino_ghost}
 
     <!-- Player Dino (Airborne jumping over obstacle) -->
@@ -349,88 +531,97 @@ def build_gameplay_preview_svg():
     return svg
 
 def build_screens_preview_svg():
+    # 4-stage rack-mounted instrument presentation (920x480)
     scale = 2.4
     w = int(128 * scale) # 307
     h = int(64 * scale)  # 153
 
-    # Screen 3 inside its card (card at 40, 255; screen inside at 40, 35)
-    # Group coordinates relative to card:
-    # Screen glass: (40, 35), w=307, h=153
-    # Ground line at 35 + int(54*2.4) = 35 + 129 = 164
-    # Dino height = 26*2.4 = 62.4
-    # Grounded dino top = 164 - 62.4 = 101.6
-    # Airborne dino top (jump 12px) = 101.6 - 12*2.4 = 72.8
-    # Cactus A height = 23*2.4 = 55.2 -> cactus top = 164 - 55.2 = 108.8
     s3_dino_a = render_grid_svg(TREX_1_GRID, 40 + int(8*scale), 72.8, scale=scale, fill="#FFFFFF")
     s3_dino_b = render_grid_svg(TREX_2_GRID, 40 + int(4*scale), 101.6, scale=scale, fill="#FFFFFF", ghost_scanlines=True)
     s3_cactus = render_grid_svg(CACTUS_A_GRID, 40 + int(72*scale), 108.8, scale=scale, fill="#FFFFFF")
 
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" width="100%" height="100%">
   <defs>
-    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0F172A"/>
-      <stop offset="100%" stop-color="#090D16"/>
+    <linearGradient id="rackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#161922"/>
+      <stop offset="100%" stop-color="#0E1015"/>
     </linearGradient>
-    <filter id="pixelGlow" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="1" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <linearGradient id="slotGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E232F"/>
+      <stop offset="100%" stop-color="#12161E"/>
+    </linearGradient>
   </defs>
 
-  <rect width="920" height="480" rx="16" fill="#060911"/>
+  <!-- Rack Chassis Base -->
+  <rect width="920" height="480" rx="12" fill="url(#rackGrad)" stroke="#262C3A" stroke-width="1.5"/>
+  <line x1="20" y1="1" x2="900" y2="1" stroke="#FFFFFF" stroke-opacity="0.1" stroke-width="1"/>
 
-  <!-- Top Header -->
-  <text x="460" y="32" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="12" font-weight="600" letter-spacing="2" text-anchor="middle">
-    OLED FINITE STATE MACHINE (128×64 MONOCHROME)
-  </text>
+  <!-- Top Rack Header -->
+  <g transform="translate(40, 24)" font-family="ui-monospace, monospace">
+    <text x="0" y="10" fill="#EDEDED" font-size="12" font-weight="700" letter-spacing="1">
+      FINITE STATE MACHINE // 128×64 MONOCHROME OLED
+    </text>
+    <text x="840" y="10" fill="#64748B" font-size="10" text-anchor="end">30.0 FPS FIXED TIMESTEP</text>
+  </g>
 
-  <!-- SCREEN 1: SPLASH / PAIRED -->
-  <g transform="translate(40, 50)">
-    <rect width="390" height="180" rx="10" fill="url(#cardGrad)" stroke="#1E293B" stroke-width="1.5"/>
-    <text x="16" y="24" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="700">01 // STATE_SPLASH (PAIRED)</text>
+  <!-- PANEL 1: SPLASH & PAIRING -->
+  <g transform="translate(40, 48)">
+    <rect width="396" height="188" rx="8" fill="url(#slotGrad)" stroke="#2A3140" stroke-width="1"/>
     
-    <!-- Screen Glass -->
-    <rect x="40" y="35" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#334155" stroke-width="1"/>
-    <g filter="url(#pixelGlow)">
-      <text x="75" y="72" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="24" font-weight="800">DINO</text>
-      <text x="75" y="102" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="24" font-weight="800">DUEL</text>
-      <text x="50" y="155" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="14" font-weight="600">Paired! Tap=Start</text>
+    <g transform="translate(14, 16)" font-family="ui-monospace, monospace">
+      <circle cx="4" cy="5" r="3" fill="#FF6B00"/>
+      <text x="14" y="8" fill="#CBD5E1" font-size="10" font-weight="700" letter-spacing="0.5">
+        01 // STATE_SPLASH (PAIRED)
+      </text>
+    </g>
+
+    <!-- Glass Display -->
+    <rect x="44" y="30" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+      <text x="75" y="70" font-size="24" font-weight="800">DINO</text>
+      <text x="75" y="98" font-size="24" font-weight="800">DUEL</text>
+      <text x="50" y="150" font-size="13" font-weight="600">Paired! Tap=Start</text>
     </g>
   </g>
 
-  <!-- SCREEN 2: COUNTDOWN -->
-  <g transform="translate(490, 50)">
-    <rect width="390" height="180" rx="10" fill="url(#cardGrad)" stroke="#1E293B" stroke-width="1.5"/>
-    <text x="16" y="24" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="700">02 // STATE_COUNTDOWN</text>
+  <!-- PANEL 2: COUNTDOWN SYNCHRONIZER -->
+  <g transform="translate(484, 48)">
+    <rect width="396" height="188" rx="8" fill="url(#slotGrad)" stroke="#2A3140" stroke-width="1"/>
     
-    <rect x="40" y="35" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#334155" stroke-width="1"/>
-    <g filter="url(#pixelGlow)">
-      <!-- Large GO! or Number -->
-      <text x="193" y="125" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="52" font-weight="900" text-anchor="middle">GO!</text>
-      <text x="193" y="165" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="12" font-weight="600" text-anchor="middle">3 → 2 → 1 → GO</text>
+    <g transform="translate(14, 16)" font-family="ui-monospace, monospace">
+      <circle cx="4" cy="5" r="3" fill="#10B981"/>
+      <text x="14" y="8" fill="#CBD5E1" font-size="10" font-weight="700" letter-spacing="0.5">
+        02 // STATE_COUNTDOWN
+      </text>
+    </g>
+
+    <rect x="44" y="30" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+      <text x="197" y="120" font-size="52" font-weight="900" text-anchor="middle">GO!</text>
+      <text x="197" y="160" fill="#71717A" font-size="11" font-weight="600" text-anchor="middle">3 → 2 → 1 → GO</text>
     </g>
   </g>
 
-  <!-- SCREEN 3: PLAYING -->
-  <g transform="translate(40, 255)">
-    <rect width="390" height="180" rx="10" fill="url(#cardGrad)" stroke="#1E293B" stroke-width="1.5"/>
-    <text x="16" y="24" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="700">03 // STATE_PLAYING (DUEL IN PROGRESS)</text>
+  <!-- PANEL 3: ACTIVE PLAYING -->
+  <g transform="translate(40, 256)">
+    <rect width="396" height="188" rx="8" fill="url(#slotGrad)" stroke="#2A3140" stroke-width="1"/>
     
-    <rect x="40" y="35" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#334155" stroke-width="1"/>
-    <!-- Embedded live action -->
-    <g filter="url(#pixelGlow)">
-      <text x="48" y="55" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="12" font-weight="700">OPP: 340</text>
-      <text x="340" y="55" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="12" font-weight="700" text-anchor="end">412</text>
-      <line x1="40" y1="{35 + int(54*scale)}" x2="{40 + w}" y2="{35 + int(54*scale)}" stroke="#FFFFFF" stroke-width="2"/>
+    <g transform="translate(14, 16)" font-family="ui-monospace, monospace">
+      <circle cx="4" cy="5" r="3" fill="#FF6B00"/>
+      <text x="14" y="8" fill="#CBD5E1" font-size="10" font-weight="700" letter-spacing="0.5">
+        03 // STATE_PLAYING (DUEL WITH GHOST)
+      </text>
+    </g>
+
+    <rect x="44" y="30" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
+    <g>
+      <text x="52" y="50" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700">OPP: 340</text>
+      <text x="344" y="50" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="end">412</text>
+      <line x1="44" y1="{30 + int(54*scale)}" x2="{44 + w}" y2="{30 + int(54*scale)}" stroke="#FFFFFF" stroke-width="2"/>
       
-      <!-- Ground texture -->
-      <circle cx="100" cy="{35 + int(54*scale) + 6}" r="1" fill="#FFFFFF"/>
-      <circle cx="160" cy="{35 + int(54*scale) + 10}" r="1" fill="#FFFFFF"/>
-      <circle cx="230" cy="{35 + int(54*scale) + 6}" r="1" fill="#FFFFFF"/>
-      <circle cx="290" cy="{35 + int(54*scale) + 10}" r="1" fill="#FFFFFF"/>
+      <circle cx="100" cy="{30 + int(54*scale) + 6}" r="1" fill="#71717A"/>
+      <circle cx="160" cy="{30 + int(54*scale) + 10}" r="1" fill="#71717A"/>
+      <circle cx="230" cy="{30 + int(54*scale) + 6}" r="1" fill="#71717A"/>
 
       {s3_dino_b}
       {s3_dino_a}
@@ -438,172 +629,208 @@ def build_screens_preview_svg():
     </g>
   </g>
 
-  <!-- SCREEN 4: GAME OVER -->
-  <g transform="translate(490, 255)">
-    <rect width="390" height="180" rx="10" fill="url(#cardGrad)" stroke="#1E293B" stroke-width="1.5"/>
-    <text x="16" y="24" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="11" font-weight="700">04 // STATE_GAMEOVER (VERDICT)</text>
+  <!-- PANEL 4: GAME OVER VERDICT -->
+  <g transform="translate(484, 256)">
+    <rect width="396" height="188" rx="8" fill="url(#slotGrad)" stroke="#2A3140" stroke-width="1"/>
     
-    <rect x="40" y="35" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#334155" stroke-width="1"/>
-    <g filter="url(#pixelGlow)">
-      <text x="60" y="68" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="22" font-weight="900">YOU WIN!</text>
-      <text x="60" y="105" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="15" font-weight="600">You: 842</text>
-      <text x="60" y="128" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="15" font-weight="600">Opp: 615</text>
-      <text x="60" y="162" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="13" font-weight="500">- Tap to Replay -</text>
+    <g transform="translate(14, 16)" font-family="ui-monospace, monospace">
+      <circle cx="4" cy="5" r="3" fill="#10B981"/>
+      <text x="14" y="8" fill="#CBD5E1" font-size="10" font-weight="700" letter-spacing="0.5">
+        04 // STATE_GAMEOVER (VERDICT)
+      </text>
+    </g>
+
+    <rect x="44" y="30" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+      <text x="64" y="64" font-size="20" font-weight="900">YOU WIN!</text>
+      <text x="64" y="100" font-size="14" font-weight="600">You: 842</text>
+      <text x="64" y="122" font-size="14" font-weight="600">Opp: 615</text>
+      <text x="64" y="156" font-size="12" font-weight="500" fill="#94A3B8">- Tap to Replay -</text>
     </g>
   </g>
 
-  <!-- Bottom status note -->
-  <text x="460" y="465" fill="#64748B" font-family="ui-monospace, monospace" font-size="11" text-anchor="middle">
-    All rendering executed at 30 FPS via Adafruit GFX (SH1106G on Player A, SSD1306 on Player B)
+  <!-- Rack Footer -->
+  <text x="460" y="468" fill="#525A6B" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">
+    All states executed locally on each board with 18-byte packed ESP-NOW heartbeat synchronization
   </text>
 </svg>
 """
     return svg
 
 def build_architecture_svg():
+    # Technical engineering schematic & architecture diagram
+    # Clean blocks, exact hardware buses, register layouts, and signal amber RF bus.
     svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 440" width="100%" height="100%">
   <defs>
-    <linearGradient id="boxGradA" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0E1A2F"/>
-      <stop offset="100%" stop-color="#0A1120"/>
+    <linearGradient id="schemBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#14171E"/>
+      <stop offset="100%" stop-color="#0B0D11"/>
     </linearGradient>
-    <linearGradient id="boxGradB" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1A1528"/>
-      <stop offset="100%" stop-color="#110E1C"/>
+    <linearGradient id="blockA" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1B1F2A"/>
+      <stop offset="100%" stop-color="#11141C"/>
     </linearGradient>
-    <marker id="arrowRight" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#00E5FF"/>
+    <linearGradient id="blockB" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1B1F2A"/>
+      <stop offset="100%" stop-color="#11141C"/>
+    </linearGradient>
+    <marker id="arrowAmber" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M 0 0 L 6 3 L 0 6 Z" fill="#FF6B00"/>
     </marker>
-    <marker id="arrowLeft" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto">
-      <path d="M 8 0 L 0 4 L 8 8 Z" fill="#A855F7"/>
+    <marker id="arrowSlate" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M 0 0 L 6 3 L 0 6 Z" fill="#94A3B8"/>
     </marker>
   </defs>
 
-  <!-- Background Canvas -->
-  <rect width="920" height="440" rx="16" fill="#070A12" stroke="#1E293B" stroke-width="1.5"/>
+  <!-- Base Plate -->
+  <rect width="920" height="440" rx="12" fill="url(#schemBg)" stroke="#262C3A" stroke-width="1.5"/>
+  <line x1="20" y1="1" x2="900" y2="1" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1"/>
 
-  <!-- Section Title -->
-  <text x="460" y="36" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="800" text-anchor="middle" letter-spacing="1">
-    SYSTEM ARCHITECTURE &amp; DETERMINISTIC SYNC
-  </text>
-  <text x="460" y="56" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="12" text-anchor="middle">
-    Cross-Architecture ESP-NOW Peer-to-Peer Protocol (Wi-Fi Channel 1)
-  </text>
+  <!-- Title Header -->
+  <g transform="translate(40, 24)" font-family="ui-monospace, monospace">
+    <text x="0" y="10" fill="#EDEDED" font-size="12" font-weight="700" letter-spacing="1">
+      SYSTEM ARCHITECTURE &amp; DETERMINISTIC BUS SCHEMATIC
+    </text>
+    <text x="0" y="24" fill="#64748B" font-size="10">
+      Peer-to-Peer ESP-NOW Action Frames (Channel 1, 2412 MHz) • Packed Struct &lt;= 20 Bytes
+    </text>
+  </g>
 
-  <!-- PLAYER A BOX (ESP32-S3) -->
-  <g transform="translate(50, 85)">
-    <rect width="270" height="300" rx="12" fill="url(#boxGradA)" stroke="#00E5FF" stroke-width="1.5" stroke-opacity="0.8"/>
+  <!-- DEVICE A (ESP32-S3 HOST) -->
+  <g transform="translate(40, 68)">
+    <rect width="280" height="320" rx="8" fill="url(#blockA)" stroke="#2D3546" stroke-width="1.2"/>
     
     <!-- Header -->
-    <rect x="16" y="16" width="90" height="22" rx="4" fill="#00E5FF" fill-opacity="0.15"/>
-    <text x="61" y="31" fill="#00E5FF" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">PLAYER A</text>
-    
-    <text x="16" y="62" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="18" font-weight="800">ESP32-S3 DevKitC</text>
-    <text x="16" y="80" fill="#64748B" font-family="ui-monospace, monospace" font-size="11">Xtensa LX7 Dual-Core • Host</text>
-
-    <!-- Component details -->
-    <g transform="translate(16, 100)" font-family="ui-monospace, monospace" font-size="11" fill="#CBD5E1">
-      <rect x="0" y="0" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
-      <text x="12" y="18" font-weight="700" fill="#38BDF8">Display:</text>
-      <text x="12" y="32">1.3" SH1106 I2C (GPIO 8/9)</text>
-
-      <rect x="0" y="50" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
-      <text x="12" y="68" font-weight="700" fill="#38BDF8">Input:</text>
-      <text x="12" y="82">TTP223 Capacitive (GPIO 10)</text>
-
-      <rect x="0" y="100" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
-      <text x="12" y="118" font-weight="700" fill="#38BDF8">RNG Engine:</text>
-      <text x="12" y="132">Local 32-bit Portable LCG</text>
+    <g transform="translate(16, 16)" font-family="ui-monospace, monospace">
+      <rect width="84" height="18" rx="3" fill="#1C222D" stroke="#323B4E" stroke-width="1"/>
+      <text x="42" y="13" fill="#EDEDED" font-size="9" font-weight="700" text-anchor="middle">PLAYER A</text>
+      
+      <text x="0" y="44" fill="#FFFFFF" font-size="15" font-weight="800">ESP32-S3 DevKitC</text>
+      <text x="0" y="58" fill="#64748B" font-size="10">Dual-Core Xtensa LX7 (Host)</text>
     </g>
 
-    <text x="135" y="278" fill="#10B981" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="middle">
-      ✓ Generates 32-bit Match Seed
+    <!-- Subsystem Boxes -->
+    <g transform="translate(16, 88)" font-family="ui-monospace, monospace" font-size="9.5">
+      <!-- Display Subsystem -->
+      <rect width="248" height="42" rx="4" fill="#141822" stroke="#262D3C" stroke-width="1"/>
+      <text x="12" y="18" fill="#94A3B8" font-weight="700">Display Bus (I2C):</text>
+      <text x="12" y="32" fill="#CBD5E1">1.3" SH1106G • GPIO 8/9 • 800 kHz</text>
+
+      <!-- Input Subsystem -->
+      <rect y="50" width="248" height="42" rx="4" fill="#141822" stroke="#262D3C" stroke-width="1"/>
+      <text x="12" y="68" fill="#94A3B8" font-weight="700">Tactile Input:</text>
+      <text x="12" y="82" fill="#CBD5E1">TTP223 Touch • GPIO 10 (200ms)</text>
+
+      <!-- RNG Subsystem -->
+      <rect y="100" width="248" height="52" rx="4" fill="#141822" stroke="#262D3C" stroke-width="1"/>
+      <text x="12" y="118" fill="#94A3B8" font-weight="700">Deterministic Engine:</text>
+      <text x="12" y="132" fill="#FF6B00">Portable 32-bit LCG</text>
+      <text x="12" y="144" fill="#64748B" font-size="8.5">esp_random() master seed</text>
+    </g>
+
+    <!-- Local Loop Status -->
+    <text x="140" y="296" fill="#10B981" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
+      30 FPS Local Physics &amp; AABB
     </text>
   </g>
 
-  <!-- NETWORK BRIDGE (CENTER) -->
-  <g transform="translate(350, 110)">
-    <!-- Wireless RF Channel Indicator -->
-    <rect x="10" y="0" width="200" height="28" rx="14" fill="#0F172A" stroke="#334155" stroke-width="1"/>
-    <circle cx="26" cy="14" r="5" fill="#10B981"/>
-    <text x="115" y="18" fill="#E2E8F0" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
-      ESP-NOW • CH 1 (2.4 GHz)
+  <!-- CENTER RF TRANSMISSION BRIDGE -->
+  <g transform="translate(340, 95)">
+    <!-- RF Header Pill -->
+    <rect x="20" y="0" width="200" height="26" rx="4" fill="#161B26" stroke="#2C3444" stroke-width="1"/>
+    <circle cx="34" cy="13" r="3.5" fill="#FF6B00"/>
+    <text x="124" y="17" fill="#CBD5E1" font-family="ui-monospace, monospace" font-size="9.5" font-weight="700" text-anchor="middle">
+      ESP-NOW 2.4 GHz // CH 01
     </text>
 
-    <!-- Packet: PKT_SEED -->
-    <path d="M 0 55 L 210 55" stroke="#00E5FF" stroke-width="2" marker-end="url(#arrowRight)"/>
-    <rect x="25" y="42" width="165" height="24" rx="4" fill="#0B132B" stroke="#00E5FF" stroke-width="1"/>
-    <text x="107" y="58" fill="#00E5FF" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
-      PKT_SEED (32-bit Seed)
-    </text>
+    <!-- Packet Stream Channels -->
+    <!-- 1: PKT_SEED -->
+    <g transform="translate(0, 45)">
+      <path d="M 0 10 L 234 10" stroke="#FF6B00" stroke-width="1.5" marker-end="url(#arrowAmber)"/>
+      <rect x="25" y="0" width="190" height="20" rx="3" fill="#12161E" stroke="#FF6B00" stroke-width="1" stroke-opacity="0.6"/>
+      <text x="120" y="14" fill="#FF6B00" font-family="ui-monospace, monospace" font-size="9" font-weight="700" text-anchor="middle">
+        PKT_SEED (32-bit Seed)
+      </text>
+    </g>
 
-    <!-- Packet: PKT_HEARTBEAT (B to A) -->
-    <path d="M 210 100 L 0 100" stroke="#A855F7" stroke-width="2" marker-end="url(#arrowLeft)"/>
-    <rect x="20" y="87" width="175" height="24" rx="4" fill="#190F2E" stroke="#A855F7" stroke-width="1"/>
-    <text x="107" y="103" fill="#C084FC" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
-      HEARTBEAT (Y + Dist, ~150ms)
-    </text>
+    <!-- 2: HEARTBEAT Client -> Host -->
+    <g transform="translate(0, 85)">
+      <path d="M 240 10 L 6 10" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrowSlate)"/>
+      <rect x="25" y="0" width="190" height="20" rx="3" fill="#12161E" stroke="#363E50" stroke-width="1"/>
+      <text x="120" y="14" fill="#CBD5E1" font-family="ui-monospace, monospace" font-size="9" font-weight="700" text-anchor="middle">
+        HEARTBEAT (Y + Dist, 150ms)
+      </text>
+    </g>
 
-    <!-- Packet: PKT_HEARTBEAT (A to B) -->
-    <path d="M 0 145 L 210 145" stroke="#00E5FF" stroke-width="2" marker-end="url(#arrowRight)"/>
-    <rect x="20" y="132" width="175" height="24" rx="4" fill="#0B132B" stroke="#00E5FF" stroke-width="1"/>
-    <text x="107" y="148" fill="#00E5FF" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
-      HEARTBEAT (Y + Dist, ~150ms)
-    </text>
+    <!-- 3: HEARTBEAT Host -> Client -->
+    <g transform="translate(0, 125)">
+      <path d="M 0 10 L 234 10" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrowSlate)"/>
+      <rect x="25" y="0" width="190" height="20" rx="3" fill="#12161E" stroke="#363E50" stroke-width="1"/>
+      <text x="120" y="14" fill="#CBD5E1" font-family="ui-monospace, monospace" font-size="9" font-weight="700" text-anchor="middle">
+        HEARTBEAT (Y + Dist, 150ms)
+      </text>
+    </g>
 
-    <!-- Packet: PKT_GAMEOVER -->
-    <path d="M 0 190 L 210 190" stroke="#EF4444" stroke-width="2" stroke-dasharray="4 3"/>
-    <rect x="30" y="177" width="155" height="24" rx="4" fill="#200A10" stroke="#EF4444" stroke-width="1"/>
-    <text x="107" y="193" fill="#F87171" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
-      PKT_GAMEOVER (Final Score)
-    </text>
+    <!-- 4: GAMEOVER Verdict -->
+    <g transform="translate(0, 165)">
+      <line x1="0" y1="10" x2="240" y2="10" stroke="#EF4444" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <rect x="35" y="0" width="170" height="20" rx="3" fill="#181318" stroke="#7F1D1D" stroke-width="1"/>
+      <text x="120" y="14" fill="#F87171" font-family="ui-monospace, monospace" font-size="9" font-weight="700" text-anchor="middle">
+        PKT_GAMEOVER (Final Score)
+      </text>
+    </g>
 
-    <!-- Payload Size Callout -->
-    <text x="110" y="235" fill="#64748B" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">
-      Packed struct: &lt;= 20 bytes total
+    <!-- Protocol Specs -->
+    <text x="120" y="215" fill="#64748B" font-family="ui-monospace, monospace" font-size="9" text-anchor="middle">
+      Packed struct: 18 bytes
     </text>
-    <text x="110" y="249" fill="#64748B" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">
-      Zero obstacle stream needed
+    <text x="120" y="228" fill="#64748B" font-family="ui-monospace, monospace" font-size="9" text-anchor="middle">
+      Zero obstacle stream over RF
     </text>
   </g>
 
-  <!-- PLAYER B BOX (ESP8266) -->
-  <g transform="translate(600, 85)">
-    <rect width="270" height="300" rx="12" fill="url(#boxGradB)" stroke="#A855F7" stroke-width="1.5" stroke-opacity="0.8"/>
+  <!-- DEVICE B (ESP8266 CLIENT) -->
+  <g transform="translate(600, 68)">
+    <rect width="280" height="320" rx="8" fill="url(#blockB)" stroke="#2D3546" stroke-width="1.2"/>
     
     <!-- Header -->
-    <rect x="16" y="16" width="90" height="22" rx="4" fill="#A855F7" fill-opacity="0.15"/>
-    <text x="61" y="31" fill="#A855F7" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">PLAYER B</text>
-    
-    <text x="16" y="62" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="18" font-weight="800">ESP8266 NodeMCU</text>
-    <text x="16" y="80" fill="#64748B" font-family="ui-monospace, monospace" font-size="11">Xtensa L106 Single-Core • Client</text>
-
-    <!-- Component details -->
-    <g transform="translate(16, 100)" font-family="ui-monospace, monospace" font-size="11" fill="#CBD5E1">
-      <rect x="0" y="0" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
-      <text x="12" y="18" font-weight="700" fill="#C084FC">Display:</text>
-      <text x="12" y="32">0.96" SSD1306 I2C (D6/D7)</text>
-
-      <rect x="0" y="50" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
-      <text x="12" y="68" font-weight="700" fill="#C084FC">Input:</text>
-      <text x="12" y="82">TTP223 Capacitive (D5 / GPIO 14)</text>
-
-      <rect x="0" y="100" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
-      <text x="12" y="118" font-weight="700" fill="#C084FC">RNG Engine:</text>
-      <text x="12" y="132">Local 32-bit Portable LCG</text>
+    <g transform="translate(16, 16)" font-family="ui-monospace, monospace">
+      <rect width="84" height="18" rx="3" fill="#1C222D" stroke="#323B4E" stroke-width="1"/>
+      <text x="42" y="13" fill="#EDEDED" font-size="9" font-weight="700" text-anchor="middle">PLAYER B</text>
+      
+      <text x="0" y="44" fill="#FFFFFF" font-size="15" font-weight="800">ESP8266 NodeMCU</text>
+      <text x="0" y="58" fill="#64748B" font-size="10">Single-Core Xtensa L106 (Client)</text>
     </g>
 
-    <text x="135" y="278" fill="#10B981" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="middle">
-      ✓ Identical Obstacle Sequence
+    <!-- Subsystem Boxes -->
+    <g transform="translate(16, 88)" font-family="ui-monospace, monospace" font-size="9.5">
+      <!-- Display Subsystem -->
+      <rect width="248" height="42" rx="4" fill="#141822" stroke="#262D3C" stroke-width="1"/>
+      <text x="12" y="18" fill="#94A3B8" font-weight="700">Display Bus (I2C):</text>
+      <text x="12" y="32" fill="#CBD5E1">0.96" SSD1306 • D6/D7 • 800 kHz</text>
+
+      <!-- Input Subsystem -->
+      <rect y="50" width="248" height="42" rx="4" fill="#141822" stroke="#262D3C" stroke-width="1"/>
+      <text x="12" y="68" fill="#94A3B8" font-weight="700">Tactile Input:</text>
+      <text x="12" y="82" fill="#CBD5E1">TTP223 Touch • D5/GPIO14 (200ms)</text>
+
+      <!-- RNG Subsystem -->
+      <rect y="100" width="248" height="52" rx="4" fill="#141822" stroke="#262D3C" stroke-width="1"/>
+      <text x="12" y="118" fill="#94A3B8" font-weight="700">Deterministic Engine:</text>
+      <text x="12" y="132" fill="#FF6B00">Portable 32-bit LCG</text>
+      <text x="12" y="144" fill="#64748B" font-size="8.5">Seeds from PKT_SEED packet</text>
+    </g>
+
+    <!-- Local Loop Status -->
+    <text x="140" y="296" fill="#10B981" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
+      Identical Local Obstacle Field
     </text>
   </g>
 
-  <!-- Bottom Core Principle Banner -->
-  <g transform="translate(50, 395)">
-    <text x="410" y="20" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="11" text-anchor="middle">
-      Independent 30 FPS physics execution on both boards • Zero input lag caused by RF latency
-    </text>
-  </g>
+  <!-- Baseline Footer -->
+  <text x="460" y="418" fill="#525A6B" font-family="ui-monospace, monospace" font-size="9.5" text-anchor="middle">
+    Standardized C++ header-only game engine • Zero standard libc rand() variance across architectures
+  </text>
 </svg>
 """
     return svg
@@ -613,23 +840,23 @@ def main():
     
     with open("assets/logo.svg", "w", encoding="utf-8") as f:
         f.write(build_logo_svg())
-    print("Generated assets/logo.svg")
+    print("Generated industrial assets/logo.svg")
 
     with open("assets/banner.svg", "w", encoding="utf-8") as f:
         f.write(build_banner_svg())
-    print("Generated assets/banner.svg")
+    print("Generated industrial assets/banner.svg")
 
     with open("assets/preview-gameplay.svg", "w", encoding="utf-8") as f:
         f.write(build_gameplay_preview_svg())
-    print("Generated assets/preview-gameplay.svg")
+    print("Generated industrial assets/preview-gameplay.svg")
 
     with open("assets/preview-screens.svg", "w", encoding="utf-8") as f:
         f.write(build_screens_preview_svg())
-    print("Generated assets/preview-screens.svg")
+    print("Generated industrial assets/preview-screens.svg")
 
     with open("assets/architecture.svg", "w", encoding="utf-8") as f:
         f.write(build_architecture_svg())
-    print("Generated assets/architecture.svg")
+    print("Generated industrial assets/architecture.svg")
 
 if __name__ == "__main__":
     main()
