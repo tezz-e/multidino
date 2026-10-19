@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 440" width="100%" height="100%">
+  <defs>
+    <linearGradient id="boxGradA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E1A2F"/>
+      <stop offset="100%" stop-color="#0A1120"/>
+    </linearGradient>
+    <linearGradient id="boxGradB" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A1528"/>
+      <stop offset="100%" stop-color="#110E1C"/>
+    </linearGradient>
+    <marker id="arrowRight" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#00E5FF"/>
+    </marker>
+    <marker id="arrowLeft" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto">
+      <path d="M 8 0 L 0 4 L 8 8 Z" fill="#A855F7"/>
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="920" height="440" rx="16" fill="#070A12" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- Section Title -->
+  <text x="460" y="36" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="800" text-anchor="middle" letter-spacing="1">
+    SYSTEM ARCHITECTURE &amp; DETERMINISTIC SYNC
+  </text>
+  <text x="460" y="56" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="12" text-anchor="middle">
+    Cross-Architecture ESP-NOW Peer-to-Peer Protocol (Wi-Fi Channel 1)
+  </text>
+
+  <!-- PLAYER A BOX (ESP32-S3) -->
+  <g transform="translate(50, 85)">
+    <rect width="270" height="300" rx="12" fill="url(#boxGradA)" stroke="#00E5FF" stroke-width="1.5" stroke-opacity="0.8"/>
+    
+    <!-- Header -->
+    <rect x="16" y="16" width="90" height="22" rx="4" fill="#00E5FF" fill-opacity="0.15"/>
+    <text x="61" y="31" fill="#00E5FF" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">PLAYER A</text>
+    
+    <text x="16" y="62" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="18" font-weight="800">ESP32-S3 DevKitC</text>
+    <text x="16" y="80" fill="#64748B" font-family="ui-monospace, monospace" font-size="11">Xtensa LX7 Dual-Core • Host</text>
+
+    <!-- Component details -->
+    <g transform="translate(16, 100)" font-family="ui-monospace, monospace" font-size="11" fill="#CBD5E1">
+      <rect x="0" y="0" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
+      <text x="12" y="18" font-weight="700" fill="#38BDF8">Display:</text>
+      <text x="12" y="32">1.3" SH1106 I2C (GPIO 8/9)</text>
+
+      <rect x="0" y="50" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
+      <text x="12" y="68" font-weight="700" fill="#38BDF8">Input:</text>
+      <text x="12" y="82">TTP223 Capacitive (GPIO 10)</text>
+
+      <rect x="0" y="100" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
+      <text x="12" y="118" font-weight="700" fill="#38BDF8">RNG Engine:</text>
+      <text x="12" y="132">Local 32-bit Portable LCG</text>
+    </g>
+
+    <text x="135" y="278" fill="#10B981" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="middle">
+      ✓ Generates 32-bit Match Seed
+    </text>
+  </g>
+
+  <!-- NETWORK BRIDGE (CENTER) -->
+  <g transform="translate(350, 110)">
+    <!-- Wireless RF Channel Indicator -->
+    <rect x="10" y="0" width="200" height="28" rx="14" fill="#0F172A" stroke="#334155" stroke-width="1"/>
+    <circle cx="26" cy="14" r="5" fill="#10B981"/>
+    <text x="115" y="18" fill="#E2E8F0" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
+      ESP-NOW • CH 1 (2.4 GHz)
+    </text>
+
+    <!-- Packet: PKT_SEED -->
+    <path d="M 0 55 L 210 55" stroke="#00E5FF" stroke-width="2" marker-end="url(#arrowRight)"/>
+    <rect x="25" y="42" width="165" height="24" rx="4" fill="#0B132B" stroke="#00E5FF" stroke-width="1"/>
+    <text x="107" y="58" fill="#00E5FF" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
+      PKT_SEED (32-bit Seed)
+    </text>
+
+    <!-- Packet: PKT_HEARTBEAT (B to A) -->
+    <path d="M 210 100 L 0 100" stroke="#A855F7" stroke-width="2" marker-end="url(#arrowLeft)"/>
+    <rect x="20" y="87" width="175" height="24" rx="4" fill="#190F2E" stroke="#A855F7" stroke-width="1"/>
+    <text x="107" y="103" fill="#C084FC" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
+      HEARTBEAT (Y + Dist, ~150ms)
+    </text>
+
+    <!-- Packet: PKT_HEARTBEAT (A to B) -->
+    <path d="M 0 145 L 210 145" stroke="#00E5FF" stroke-width="2" marker-end="url(#arrowRight)"/>
+    <rect x="20" y="132" width="175" height="24" rx="4" fill="#0B132B" stroke="#00E5FF" stroke-width="1"/>
+    <text x="107" y="148" fill="#00E5FF" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
+      HEARTBEAT (Y + Dist, ~150ms)
+    </text>
+
+    <!-- Packet: PKT_GAMEOVER -->
+    <path d="M 0 190 L 210 190" stroke="#EF4444" stroke-width="2" stroke-dasharray="4 3"/>
+    <rect x="30" y="177" width="155" height="24" rx="4" fill="#200A10" stroke="#EF4444" stroke-width="1"/>
+    <text x="107" y="193" fill="#F87171" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">
+      PKT_GAMEOVER (Final Score)
+    </text>
+
+    <!-- Payload Size Callout -->
+    <text x="110" y="235" fill="#64748B" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">
+      Packed struct: &lt;= 20 bytes total
+    </text>
+    <text x="110" y="249" fill="#64748B" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">
+      Zero obstacle stream needed
+    </text>
+  </g>
+
+  <!-- PLAYER B BOX (ESP8266) -->
+  <g transform="translate(600, 85)">
+    <rect width="270" height="300" rx="12" fill="url(#boxGradB)" stroke="#A855F7" stroke-width="1.5" stroke-opacity="0.8"/>
+    
+    <!-- Header -->
+    <rect x="16" y="16" width="90" height="22" rx="4" fill="#A855F7" fill-opacity="0.15"/>
+    <text x="61" y="31" fill="#A855F7" font-family="ui-monospace, monospace" font-size="10" font-weight="700" text-anchor="middle">PLAYER B</text>
+    
+    <text x="16" y="62" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="18" font-weight="800">ESP8266 NodeMCU</text>
+    <text x="16" y="80" fill="#64748B" font-family="ui-monospace, monospace" font-size="11">Xtensa L106 Single-Core • Client</text>
+
+    <!-- Component details -->
+    <g transform="translate(16, 100)" font-family="ui-monospace, monospace" font-size="11" fill="#CBD5E1">
+      <rect x="0" y="0" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
+      <text x="12" y="18" font-weight="700" fill="#C084FC">Display:</text>
+      <text x="12" y="32">0.96" SSD1306 I2C (D6/D7)</text>
+
+      <rect x="0" y="50" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
+      <text x="12" y="68" font-weight="700" fill="#C084FC">Input:</text>
+      <text x="12" y="82">TTP223 Capacitive (D5 / GPIO 14)</text>
+
+      <rect x="0" y="100" width="238" height="40" rx="6" fill="#1E293B" fill-opacity="0.6"/>
+      <text x="12" y="118" font-weight="700" fill="#C084FC">RNG Engine:</text>
+      <text x="12" y="132">Local 32-bit Portable LCG</text>
+    </g>
+
+    <text x="135" y="278" fill="#10B981" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="middle">
+      ✓ Identical Obstacle Sequence
+    </text>
+  </g>
+
+  <!-- Bottom Core Principle Banner -->
+  <g transform="translate(50, 395)">
+    <text x="410" y="20" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="11" text-anchor="middle">
+      Independent 30 FPS physics execution on both boards • Zero input lag caused by RF latency
+    </text>
+  </g>
+</svg>
