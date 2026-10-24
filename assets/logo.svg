@@ -11,6 +11,9 @@
     <pattern id="hardwareGrid" width="16" height="16" patternUnits="userSpaceOnUse">
       <path d="M 16 0 L 0 0 0 16" fill="none" stroke="#222631" stroke-width="0.6"/>
     </pattern>
+    <clipPath id="logoScreenClip">
+      <rect x="52" y="74" width="296" height="200" rx="4"/>
+    </clipPath>
   </defs>
 
   <!-- Physical Chassis Base -->
@@ -43,8 +46,8 @@
   <!-- Subtle Display Matrix Grid -->
   <rect x="52" y="74" width="296" height="200" fill="none" stroke="#0E121A" stroke-width="1"/>
 
-  <!-- OLED 1-Bit Screen Content -->
-  <g>
+  <!-- OLED 1-Bit Screen Content (Clipped to Glass) -->
+  <g clip-path="url(#logoScreenClip)">
     <!-- Screen HUD -->
     <text x="68" y="98" fill="#A1A1AA" font-family="ui-monospace, monospace" font-size="12" font-weight="700" letter-spacing="1">CH:01</text>
     <text x="332" y="98" fill="#EDEDED" font-family="ui-monospace, monospace" font-size="13" font-weight="700" text-anchor="end" letter-spacing="1">0042</text>

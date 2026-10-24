@@ -135,6 +135,9 @@ def build_logo_svg():
     <pattern id="hardwareGrid" width="16" height="16" patternUnits="userSpaceOnUse">
       <path d="M 16 0 L 0 0 0 16" fill="none" stroke="#222631" stroke-width="0.6"/>
     </pattern>
+    <clipPath id="logoScreenClip">
+      <rect x="52" y="74" width="296" height="200" rx="4"/>
+    </clipPath>
   </defs>
 
   <!-- Physical Chassis Base -->
@@ -167,8 +170,8 @@ def build_logo_svg():
   <!-- Subtle Display Matrix Grid -->
   <rect x="52" y="74" width="296" height="200" fill="none" stroke="#0E121A" stroke-width="1"/>
 
-  <!-- OLED 1-Bit Screen Content -->
-  <g>
+  <!-- OLED 1-Bit Screen Content (Clipped to Glass) -->
+  <g clip-path="url(#logoScreenClip)">
     <!-- Screen HUD -->
     <text x="68" y="98" fill="#A1A1AA" font-family="ui-monospace, monospace" font-size="12" font-weight="700" letter-spacing="1">CH:01</text>
     <text x="332" y="98" fill="#EDEDED" font-family="ui-monospace, monospace" font-size="13" font-weight="700" text-anchor="end" letter-spacing="1">0042</text>
@@ -216,18 +219,23 @@ def build_logo_svg():
 
 def build_banner_svg():
     # Industrial hardware test-bench console (960x320)
-    # Replaces neon gradient slop with precision-machined dark aluminum chassis,
-    # authentic physical telemetry, and two distinct hardware modules.
+    # Master view with two distinct hardware modules (Player A & Player B)
+    # and center deterministic protocol bridge.
     
-    # Left Display (Player A Host on ESP32-S3):
-    dino_a = render_grid_svg(TREX_1_GRID, 100, 130, scale=3.0, fill="#FFFFFF")
-    cactus_a = render_grid_svg(CACTUS_C_GRID, 210, 140, scale=3.0, fill="#A1A1AA")
+    # Scale = 2.0 for 244x127 OLED display mockups (128x64 display scaled 2x)
+    # Ground is at y = 158 inside each module group.
+    # Dino height = 26 * 2 = 52px. Grounded y = 158 - 52 = 106. Jumping y = 106 - 20 = 86.
+    # Cactus C height = 23 * 2 = 46px. Grounded y = 158 - 46 = 112.
+    
+    # Module A Sprites (local coordinates inside translate(36, 52)):
+    dino_a_ghost = render_grid_svg(TREX_2_GRID, 38, 106, scale=2.0, fill="#FFFFFF", ghost_scanlines=True)
+    dino_a_local = render_grid_svg(TREX_1_GRID, 78, 86, scale=2.0, fill="#FFFFFF")
+    cactus_a_obs = render_grid_svg(CACTUS_C_GRID, 150, 112, scale=2.0, fill="#A1A1AA")
 
-    # Right Display (Player B Client on ESP8266):
-    # Showing ghost dino on the exact same obstacle sequence
-    dino_ghost = render_grid_svg(TREX_2_GRID, 700, 140, scale=3.0, fill="#FFFFFF", ghost_scanlines=True)
-    dino_b = render_grid_svg(TREX_1_GRID, 730, 130, scale=3.0, fill="#FFFFFF")
-    cactus_b = render_grid_svg(CACTUS_C_GRID, 810, 140, scale=3.0, fill="#A1A1AA")
+    # Module B Sprites (local coordinates inside translate(644, 52)):
+    dino_b_ghost = render_grid_svg(TREX_1_GRID, 42, 86, scale=2.0, fill="#FFFFFF", ghost_scanlines=True)
+    dino_b_local = render_grid_svg(TREX_2_GRID, 78, 106, scale=2.0, fill="#FFFFFF")
+    cactus_b_obs = render_grid_svg(CACTUS_C_GRID, 150, 112, scale=2.0, fill="#A1A1AA")
 
     screws = [
         svg_screw(20, 20, 4.5, 45),
@@ -251,6 +259,12 @@ def build_banner_svg():
     <pattern id="benchGrid" width="20" height="20" patternUnits="userSpaceOnUse">
       <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1D222E" stroke-width="0.7"/>
     </pattern>
+    <clipPath id="screenAClip">
+      <rect x="18" y="50" width="244" height="127" rx="3"/>
+    </clipPath>
+    <clipPath id="screenBClip">
+      <rect x="18" y="50" width="244" height="127" rx="3"/>
+    </clipPath>
   </defs>
 
   <!-- Main Chassis Plate -->
@@ -296,16 +310,21 @@ def build_banner_svg():
     <!-- OLED Glass -->
     <rect x="18" y="50" width="244" height="127" rx="3" fill="#020305"/>
 
-    <!-- OLED Screen Content -->
-    <g>
+    <!-- OLED Screen Content (Clipped to Glass) -->
+    <g clip-path="url(#screenAClip)">
       <text x="28" y="68" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10" font-weight="700">OPP: 294</text>
       <text x="250" y="68" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="end">312</text>
-      <line x1="18" y1="168" x2="262" y2="168" stroke="#FFFFFF" stroke-width="1.5"/>
-      <circle cx="45" cy="172" r="1" fill="#71717A"/>
-      <circle cx="120" cy="172" r="1" fill="#71717A"/>
-      <circle cx="190" cy="172" r="1" fill="#71717A"/>
-      {dino_a}
-      {cactus_a}
+      
+      <!-- Ground line at y = 158 -->
+      <line x1="18" y1="158" x2="262" y2="158" stroke="#FFFFFF" stroke-width="1.5"/>
+      <circle cx="45" cy="164" r="1" fill="#71717A"/>
+      <circle cx="120" cy="164" r="1" fill="#71717A"/>
+      <circle cx="190" cy="164" r="1" fill="#71717A"/>
+      
+      <!-- Ghost dino trailing, Local dino jumping, Cactus on ground -->
+      {dino_a_ghost}
+      {dino_a_local}
+      {cactus_a_obs}
     </g>
 
     <!-- Hardware Pin Header Strip -->
@@ -318,7 +337,6 @@ def build_banner_svg():
       <text x="12" y="27" fill="#525A6B">INPUT:</text>
       <text x="65" y="27" fill="#FF6B00">TTP223 TOUCH [IO10]</text>
       
-      <!-- Copper test pads -->
       {svg_via(235, 17)}
     </g>
   </g>
@@ -386,19 +404,21 @@ def build_banner_svg():
     <!-- OLED Glass -->
     <rect x="18" y="50" width="244" height="127" rx="3" fill="#020305"/>
 
-    <!-- OLED Screen Content with GHOST DINO -->
-    <g>
+    <!-- OLED Screen Content with GHOST DINO (Clipped to Glass) -->
+    <g clip-path="url(#screenBClip)">
       <text x="28" y="68" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10" font-weight="700">OPP: 312</text>
       <text x="250" y="68" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="end">294</text>
-      <line x1="18" y1="168" x2="262" y2="168" stroke="#FFFFFF" stroke-width="1.5"/>
-      <circle cx="50" cy="172" r="1" fill="#71717A"/>
-      <circle cx="140" cy="172" r="1" fill="#71717A"/>
-      <circle cx="210" cy="172" r="1" fill="#71717A"/>
       
-      <!-- Ghost dino + local dino -->
-      {dino_ghost}
-      {dino_b}
-      {cactus_b}
+      <!-- Ground line at y = 158 -->
+      <line x1="18" y1="158" x2="262" y2="158" stroke="#FFFFFF" stroke-width="1.5"/>
+      <circle cx="50" cy="164" r="1" fill="#71717A"/>
+      <circle cx="140" cy="164" r="1" fill="#71717A"/>
+      <circle cx="210" cy="164" r="1" fill="#71717A"/>
+      
+      <!-- Ghost dino jumping (Player A), Local dino running (Player B), Cactus on ground -->
+      {dino_b_ghost}
+      {dino_b_local}
+      {cactus_b_obs}
     </g>
 
     <!-- Hardware Pin Header Strip -->
@@ -428,7 +448,10 @@ def build_gameplay_preview_svg():
     screen_y = 58
     ground_y = screen_y + int(54 * scale) # 58 + 216 = 274
 
-    dino_local = render_grid_svg(TREX_1_GRID, screen_x + int(8*scale), 108, scale=scale, fill="#FFFFFF")
+    # Grounded y = ground_y - 26*4 = 274 - 104 = 170
+    # Jumping y = 170 - 16*4 = 106
+    # Cactus C height = 23*4 = 92 -> Cactus y = 274 - 92 = 182
+    dino_local = render_grid_svg(TREX_1_GRID, screen_x + int(8*scale), 106, scale=scale, fill="#FFFFFF")
     dino_ghost = render_grid_svg(TREX_2_GRID, screen_x + int(4*scale), 170, scale=scale, fill="#FFFFFF", ghost_scanlines=True)
     cactus_obs = render_grid_svg(CACTUS_C_GRID, screen_x + int(75*scale), 182, scale=scale, fill="#FFFFFF")
 
@@ -450,6 +473,9 @@ def build_gameplay_preview_svg():
       <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.01"/>
       <stop offset="100%" stop-color="#000000" stop-opacity="0.2"/>
     </linearGradient>
+    <clipPath id="gameplayClip">
+      <rect x="{screen_x}" y="{screen_y}" width="512" height="256" rx="4"/>
+    </clipPath>
   </defs>
 
   <!-- FR4 PCB Substrate -->
@@ -501,8 +527,8 @@ def build_gameplay_preview_svg():
   <rect x="{screen_x}" y="{screen_y}" width="512" height="256" fill="#000000"/>
   <rect x="{screen_x}" y="{screen_y}" width="512" height="256" fill="url(#glassSheen)"/>
 
-  <!-- True 1-Bit Pixel Monochrome Content -->
-  <g>
+  <!-- True 1-Bit Pixel Monochrome Content (Clipped to glass) -->
+  <g clip-path="url(#gameplayClip)">
     <!-- HUD -->
     <text x="{screen_x + 12}" y="{screen_y + 24}" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="18" font-weight="700" letter-spacing="1">OPP: 340</text>
     <text x="{screen_x + 512 - 12}" y="{screen_y + 24}" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="18" font-weight="700" text-anchor="end" letter-spacing="1">412</text>
@@ -535,10 +561,14 @@ def build_screens_preview_svg():
     scale = 2.4
     w = int(128 * scale) # 307
     h = int(64 * scale)  # 153
+    ground_y = 30 + int(54 * scale) # 30 + 129 = 159
 
-    s3_dino_a = render_grid_svg(TREX_1_GRID, 40 + int(8*scale), 72.8, scale=scale, fill="#FFFFFF")
-    s3_dino_b = render_grid_svg(TREX_2_GRID, 40 + int(4*scale), 101.6, scale=scale, fill="#FFFFFF", ghost_scanlines=True)
-    s3_cactus = render_grid_svg(CACTUS_A_GRID, 40 + int(72*scale), 108.8, scale=scale, fill="#FFFFFF")
+    # Grounded dino y = 159 - 26*2.4 = 159 - 62.4 = 96.6
+    # Jumping dino y = 96.6 - 15*2.4 = 60.6
+    # Cactus A y = 159 - 23*2.4 = 159 - 55.2 = 103.8
+    s3_dino_a = render_grid_svg(TREX_1_GRID, 44 + int(24*scale), 60.6, scale=scale, fill="#FFFFFF")
+    s3_dino_b = render_grid_svg(TREX_2_GRID, 44 + int(8*scale), 96.6, scale=scale, fill="#FFFFFF", ghost_scanlines=True)
+    s3_cactus = render_grid_svg(CACTUS_A_GRID, 44 + int(70*scale), 103.8, scale=scale, fill="#FFFFFF")
 
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" width="100%" height="100%">
   <defs>
@@ -550,6 +580,9 @@ def build_screens_preview_svg():
       <stop offset="0%" stop-color="#1E232F"/>
       <stop offset="100%" stop-color="#12161E"/>
     </linearGradient>
+    <clipPath id="panelClip">
+      <rect x="44" y="30" width="{w}" height="{h}" rx="4"/>
+    </clipPath>
   </defs>
 
   <!-- Rack Chassis Base -->
@@ -577,7 +610,7 @@ def build_screens_preview_svg():
 
     <!-- Glass Display -->
     <rect x="44" y="30" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
-    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF" clip-path="url(#panelClip)">
       <text x="75" y="70" font-size="24" font-weight="800">DINO</text>
       <text x="75" y="98" font-size="24" font-weight="800">DUEL</text>
       <text x="50" y="150" font-size="13" font-weight="600">Paired! Tap=Start</text>
@@ -596,7 +629,7 @@ def build_screens_preview_svg():
     </g>
 
     <rect x="44" y="30" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
-    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF" clip-path="url(#panelClip)">
       <text x="197" y="120" font-size="52" font-weight="900" text-anchor="middle">GO!</text>
       <text x="197" y="160" fill="#71717A" font-size="11" font-weight="600" text-anchor="middle">3 → 2 → 1 → GO</text>
     </g>
@@ -614,14 +647,14 @@ def build_screens_preview_svg():
     </g>
 
     <rect x="44" y="30" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
-    <g>
+    <g clip-path="url(#panelClip)">
       <text x="52" y="50" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700">OPP: 340</text>
       <text x="344" y="50" fill="#FFFFFF" font-family="ui-monospace, monospace" font-size="11" font-weight="700" text-anchor="end">412</text>
-      <line x1="44" y1="{30 + int(54*scale)}" x2="{44 + w}" y2="{30 + int(54*scale)}" stroke="#FFFFFF" stroke-width="2"/>
+      <line x1="44" y1="{ground_y}" x2="{44 + w}" y2="{ground_y}" stroke="#FFFFFF" stroke-width="2"/>
       
-      <circle cx="100" cy="{30 + int(54*scale) + 6}" r="1" fill="#71717A"/>
-      <circle cx="160" cy="{30 + int(54*scale) + 10}" r="1" fill="#71717A"/>
-      <circle cx="230" cy="{30 + int(54*scale) + 6}" r="1" fill="#71717A"/>
+      <circle cx="100" cy="{ground_y + 6}" r="1" fill="#71717A"/>
+      <circle cx="160" cy="{ground_y + 10}" r="1" fill="#71717A"/>
+      <circle cx="230" cy="{ground_y + 6}" r="1" fill="#71717A"/>
 
       {s3_dino_b}
       {s3_dino_a}
@@ -641,7 +674,7 @@ def build_screens_preview_svg():
     </g>
 
     <rect x="44" y="30" width="{w}" height="{h}" rx="4" fill="#000000" stroke="#242B38" stroke-width="1"/>
-    <g font-family="ui-monospace, monospace" fill="#FFFFFF">
+    <g font-family="ui-monospace, monospace" fill="#FFFFFF" clip-path="url(#panelClip)">
       <text x="64" y="64" font-size="20" font-weight="900">YOU WIN!</text>
       <text x="64" y="100" font-size="14" font-weight="600">You: 842</text>
       <text x="64" y="122" font-size="14" font-weight="600">Opp: 615</text>
